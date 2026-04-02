@@ -635,6 +635,36 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 
 .choices.cd-choices {
   margin-bottom: 0;
+  position: relative;
+}
+
+.choices.cd-choices.is-open {
+  z-index: 9998;
+}
+
+/* When a Choices dropdown is open, prevent ancestor clipping and
+   create a stacking context so the panel renders above sibling cards */
+.card:has(.choices.is-open),
+.card-flush:has(.choices.is-open),
+.form-container:has(.choices.is-open),
+.panel:has(.choices.is-open),
+.modal-body:has(.choices.is-open) {
+  overflow: visible !important;
+  position: relative;
+  z-index: 100;
+}
+
+.dropdown-menu,
+.ng-dropdown-panel,
+.mat-select-panel,
+.p-dropdown-panel,
+.choices.cd-choices .choices__list--dropdown,
+.choices.cd-choices .choices__list[aria-expanded] {
+  z-index: 9999 !important;
+}
+
+.cdk-overlay-container {
+  z-index: 10000 !important;
 }
 
 .choices.cd-choices .choices__inner {
@@ -650,10 +680,13 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 
 .choices.cd-choices .choices__list--single {
   padding: 0;
+  background: var(--surface);
 }
 
 .choices.cd-choices .choices__list--single .choices__item {
+  background: var(--surface);
   color: var(--text);
+  padding: 0;
 }
 
 .choices.cd-choices[data-type*='select-one']::after {
@@ -683,28 +716,43 @@ select.form-control { appearance: none; background-image: url("data:image/svg+xm
 .choices.cd-choices .choices__list[aria-expanded] {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--surface) !important;
   box-shadow: 0 16px 32px rgba(15, 23, 42, .2);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-top: 6px;
-  z-index: 320;
+  z-index: 9999;
   opacity: 0;
   transform: translateY(8px) scale(.98);
   transform-origin: top center;
   animation: cdDropdownIn .2s ease forwards;
+  position: absolute;
+  width: 100%;
+  max-height: 250px;
+  top: 100%;
+  bottom: auto;
+  left: 0;
 }
 
 .choices.cd-choices .choices__list--dropdown .choices__item,
 .choices.cd-choices .choices__list[aria-expanded] .choices__item {
-  color: var(--text);
+  background: var(--surface) !important;
+  color: var(--text) !important;
   font-size: 14px;
   padding: 10px 12px;
 }
 
+.choices.cd-choices .choices__list--dropdown .choices__item--selected,
+.choices.cd-choices .choices__list[aria-expanded] .choices__item--selected {
+  background: var(--accent) !important;
+  color: var(--surface) !important;
+  font-weight: 500;
+}
+
 .choices.cd-choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
 .choices.cd-choices .choices__list[aria-expanded] .choices__item--selectable.is-highlighted {
-  background: color-mix(in srgb, var(--accent-light) 75%, var(--surface));
-  color: var(--text);
+  background: var(--accent-light) !important;
+  color: var(--accent) !important;
 }
 
 .choices.cd-choices .choices__placeholder {
@@ -717,7 +765,14 @@ html[data-mode='dark'] .choices.cd-choices[data-type*='select-one']::after {
 
 html[data-mode='dark'] .choices.cd-choices .choices__list--dropdown,
 html[data-mode='dark'] .choices.cd-choices .choices__list[aria-expanded] {
+  background: var(--surface) !important;
   box-shadow: 0 16px 34px rgba(0, 0, 0, .45);
+}
+
+html[data-mode='dark'] .choices.cd-choices .choices__list--dropdown .choices__item,
+html[data-mode='dark'] .choices.cd-choices .choices__list[aria-expanded] .choices__item {
+  background: var(--surface) !important;
+  color: var(--text) !important;
 }
 
 @keyframes cdDropdownIn {

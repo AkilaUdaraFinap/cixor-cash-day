@@ -30,7 +30,7 @@ interface NavItem { icon: string; label: string; route: string; }
            [class.active]="isActive(item.route)"
            [title]="collapsed() ? item.label : ''">
           <span class="nav-icon" [innerHTML]="item.icon"></span>
-          <span class="nav-label" *ngIf="!collapsed()">{{ item.label }}</span>
+          <span class="nav-label">{{ item.label }}</span>
         </a>
       </nav>
 
@@ -100,7 +100,9 @@ interface NavItem { icon: string; label: string; route: string; }
       &.active { background: var(--sidebar-active-bg); color: var(--sidebar-text); border-left-color: var(--sidebar-active-border); }
     }
     .nav-icon { width: 20px; flex-shrink: 0; display: flex; }
-    .nav-icon :deep(svg) { width: 18px; height: 18px; }
+    .nav-icon ::ng-deep svg { width: 18px; height: 18px; }
+    .nav-label { }
+    .sidebar.collapsed .nav-label { display: none; }
     .sidebar-footer {
       padding: 12px 12px 16px;
       border-top: 1px solid color-mix(in srgb, var(--sidebar-text) 12%, transparent);
@@ -124,11 +126,12 @@ interface NavItem { icon: string; label: string; route: string; }
         right: 0;
         bottom: 0;
         width: 100vw;
-        min-height: calc(68px + env(safe-area-inset-bottom));
-        height: calc(68px + env(safe-area-inset-bottom));
+        min-height: calc(64px + env(safe-area-inset-bottom));
+        height: auto;
         padding-bottom: env(safe-area-inset-bottom);
         z-index: 250;
-        box-shadow: 0 -8px 24px rgba(0, 0, 0, .18);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, .22);
+        border-top: 1px solid color-mix(in srgb, var(--sidebar-text) 10%, transparent);
       }
       .sidebar.collapsed { width: 100vw; }
       .sidebar-brand,
@@ -138,35 +141,53 @@ interface NavItem { icon: string; label: string; route: string; }
         flex-direction: row;
         align-items: stretch;
         justify-content: space-around;
-        gap: 6px;
-        padding: 7px 10px;
+        gap: 0;
+        padding: 6px 4px 4px;
       }
       .nav-item {
         flex: 1;
         border-left: none;
-        border-radius: 10px;
-        padding: 6px 4px;
-        gap: 4px;
+        border-radius: 8px;
+        padding: 6px 2px 4px;
+        gap: 3px;
         min-width: 0;
         flex-direction: column;
+        align-items: center;
         justify-content: center;
         text-align: center;
+        background: transparent;
+        color: var(--sidebar-muted);
+        transition: color .15s ease;
+      }
+      .nav-item:hover {
+        background: transparent;
+        color: var(--sidebar-text);
       }
       .nav-item.active {
         border-left-color: transparent;
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-active-border) 58%, transparent);
+        background: transparent;
+        color: var(--sidebar-active-border);
+        box-shadow: none;
       }
       .nav-label {
         display: block !important;
         font-size: 10px;
-        line-height: 1.1;
+        font-weight: 500;
+        line-height: 1.15;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        letter-spacing: 0.01em;
       }
-      .nav-icon { width: auto; }
-      .nav-icon :deep(svg) { width: 17px; height: 17px; }
+      .nav-icon {
+        width: auto;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-icon ::ng-deep svg { width: 22px; height: 22px; }
     }
   `]
 })

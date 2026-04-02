@@ -27,7 +27,7 @@ import { DropdownService } from './core/services/dropdown.service';
   styles: [`
     .app-shell  { display: flex; height: 100vh; overflow: hidden; }
     .app-main   { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-    .app-content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
+    .app-content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); position: relative; }
 
     @media (max-width: 768px) {
       .app-shell { display: block; height: 100dvh; }
