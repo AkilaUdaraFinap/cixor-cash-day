@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import 'flatpickr/dist/flatpickr.min.css';
+@import 'choices.js/public/assets/styles/choices.min.css';
 
 // ── Design Tokens ──────────────────────────────────────────
 :root {
@@ -631,6 +632,154 @@ html[data-mode='dark'] .form-control.cd-date-input:focus {
 
 textarea.form-control { resize: vertical; min-height: 80px; }
 select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+.choices.cd-choices {
+  margin-bottom: 0;
+}
+
+.choices.cd-choices .choices__inner {
+  min-height: 40px;
+  padding: 7px 36px 7px 12px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.choices.cd-choices .choices__list--single {
+  padding: 0;
+}
+
+.choices.cd-choices .choices__list--single .choices__item {
+  color: var(--text);
+}
+
+.choices.cd-choices[data-type*='select-one']::after {
+  border: 0;
+  width: 12px;
+  height: 12px;
+  right: 12px;
+  margin-top: -6px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1.5 3.5h9z'/%3E%3C/svg%3E");
+}
+
+.choices.cd-choices.is-open[data-type*='select-one']::after {
+  transform: rotate(180deg);
+  margin-top: -6px;
+}
+
+.choices.cd-choices.is-focused .choices__inner,
+.choices.cd-choices.is-open .choices__inner {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.choices.cd-choices .choices__list--dropdown,
+.choices.cd-choices .choices__list[aria-expanded] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, .2);
+  overflow: hidden;
+  margin-top: 6px;
+  z-index: 320;
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+  transform-origin: top center;
+  animation: cdDropdownIn .2s ease forwards;
+}
+
+.choices.cd-choices .choices__list--dropdown .choices__item,
+.choices.cd-choices .choices__list[aria-expanded] .choices__item {
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.choices.cd-choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.choices.cd-choices .choices__list[aria-expanded] .choices__item--selectable.is-highlighted {
+  background: color-mix(in srgb, var(--accent-light) 75%, var(--surface));
+  color: var(--text);
+}
+
+.choices.cd-choices .choices__placeholder {
+  opacity: .72;
+}
+
+html[data-mode='dark'] .choices.cd-choices[data-type*='select-one']::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A8B8CA' d='M6 8L1.5 3.5h9z'/%3E%3C/svg%3E");
+}
+
+html[data-mode='dark'] .choices.cd-choices .choices__list--dropdown,
+html[data-mode='dark'] .choices.cd-choices .choices__list[aria-expanded] {
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .45);
+}
+
+@keyframes cdDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .choices.cd-choices .choices__inner {
+    min-height: 46px;
+    padding: 10px 40px 10px 12px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+
+  .choices.cd-choices .choices__list--single .choices__item {
+    line-height: 1.35;
+  }
+
+  .choices.cd-choices[data-type*='select-one']::after {
+    width: 14px;
+    height: 14px;
+    right: 12px;
+    margin-top: -7px;
+    background-size: 14px;
+  }
+
+  .choices.cd-choices .choices__list--dropdown,
+  .choices.cd-choices .choices__list[aria-expanded] {
+    border-radius: 12px;
+    margin-top: 8px;
+    max-height: min(46vh, 320px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .choices.cd-choices .choices__list--dropdown .choices__item,
+  .choices.cd-choices .choices__list[aria-expanded] .choices__item {
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .choices.cd-choices .choices__inner {
+    min-height: 48px;
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+
+  .choices.cd-choices .choices__list--dropdown,
+  .choices.cd-choices .choices__list[aria-expanded] {
+    max-height: min(52vh, 360px);
+  }
+}
+
 .form-error {
   font-size: 12px;
   color: var(--red);
