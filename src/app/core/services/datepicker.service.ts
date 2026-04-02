@@ -44,15 +44,27 @@ export class DatepickerService implements OnDestroy {
 
     const initialValue = input.value;
     input.dataset['cdDatepicker'] = 'true';
+    input.classList.add('cd-date-input');
     input.type = 'text';
     input.autocomplete = 'off';
 
     const instance = flatpickr(input, {
       dateFormat: 'Y-m-d',
       altInput: true,
+      altInputClass: 'form-control cd-date-input',
       altFormat: 'm/d/Y',
       disableMobile: true,
       animate: true,
+      monthSelectorType: 'dropdown',
+      parseDate: (dateStr, format) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return flatpickr.parseDate(dateStr, 'Y-m-d') ?? new Date(dateStr);
+        }
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+          return flatpickr.parseDate(dateStr, 'm/d/Y') ?? new Date(dateStr);
+        }
+        return flatpickr.parseDate(dateStr, format) ?? new Date(dateStr);
+      },
       onReady: (_, __, fp) => {
         this.applyTheme(fp);
         this.emitInputEvents(input);
@@ -78,7 +90,7 @@ export class DatepickerService implements OnDestroy {
 
   private syncFromModel(input: HTMLInputElement, fp: FlatpickrInstance): void {
     if (!input.value) return;
-    fp.setDate(input.value, false, 'Y-m-d');
+    fp.setDate(input.value, false);
   }
 
   private emitInputEvents(input: HTMLInputElement): void {
