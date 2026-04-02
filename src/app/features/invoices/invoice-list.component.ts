@@ -23,7 +23,7 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 
     <div class="card mb-4">
       <div class="filter-bar">
-        <input class="form-control" style="flex:1; min-width:220px" placeholder="Search customer, invoice number, officer..." [(ngModel)]="searchTerm"/>
+        <input class="form-control invoice-search" placeholder="Search customer, invoice number, officer..." [(ngModel)]="searchTerm"/>
         <select class="form-control" [(ngModel)]="statusFilter">
           <option value="">All statuses</option>
           <option>Draft</option>
@@ -36,7 +36,7 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
         <input class="form-control" type="date" [(ngModel)]="fromDate" title="From date"/>
         <input class="form-control" type="date" [(ngModel)]="toDate" title="To date"/>
         <button *ngIf="hasActiveFilters()" class="btn btn-secondary btn-sm" type="button" (click)="clearFilters()">Clear Filters</button>
-        <div class="text-muted text-sm">{{ filtered().length }} invoice(s)</div>
+        <div class="text-muted text-sm invoice-count">{{ filtered().length }} invoice(s)</div>
       </div>
     </div>
 
@@ -89,6 +89,15 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
       </ng-template>
     </div>
   `,
+  styles: [`
+    .invoice-search { flex: 1; min-width: 220px; }
+    .invoice-count { margin-left: auto; }
+
+    @media (max-width: 768px) {
+      .invoice-search { min-width: 0; }
+      .invoice-count { margin-left: 0; width: 100%; text-align: right; }
+    }
+  `],
 })
 export class InvoiceListComponent implements OnInit {
   private readonly svc = inject(MockDataService);

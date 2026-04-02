@@ -19,7 +19,7 @@ import { Customer, Invoice } from '../../shared/models/models';
       <a [routerLink]="['/customers', customer()?.id, 'edit']" class="btn btn-secondary">Edit Customer</a>
     </div>
 
-    <div *ngIf="customer() as c" class="grid" style="grid-template-columns:340px 1fr;gap:24px;align-items:start">
+    <div *ngIf="customer() as c" class="customer-layout">
       <!-- Left Panel -->
       <div>
         <div class="card mb-4">
@@ -82,6 +82,11 @@ import { Customer, Invoice } from '../../shared/models/models';
   styles: [`
     .section-title { font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
     .officer-card { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px; }
+    .customer-layout { display:grid; grid-template-columns:340px minmax(0, 1fr); gap:24px; align-items:start; }
+
+    @media (max-width: 980px) {
+      .customer-layout { grid-template-columns:1fr; }
+    }
   `]
 })
 export class CustomerDetailComponent implements OnInit {

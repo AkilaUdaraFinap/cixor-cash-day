@@ -253,6 +253,12 @@ interface InvoiceFormState {
       .invoice-layout { grid-template-columns:1fr; }
       .sticky-top { position:static; }
     }
+    @media (max-width: 768px) {
+      .serial-row { flex-direction: column; align-items: stretch; }
+      .serial-row .btn { width: 100%; }
+      .totals-box { margin-left: 0; max-width: 100%; }
+      .invoice-side .card { position: static; }
+    }
   `],
 })
 export class InvoiceFormComponent implements OnInit {

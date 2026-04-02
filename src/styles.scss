@@ -749,6 +749,14 @@ table.data-table td .btn.btn-ghost {
 .bg-light     { background: var(--bg); }
 .lkr-mono     { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 html[data-mode='dark'] {
   color-scheme: dark;
 }
@@ -776,19 +784,58 @@ html[data-mode='dark'] .info-box.danger { color: color-mix(in srgb, var(--red) 7
 }
 
 // ── Responsive ──────────────────────────────────────────────
+@media (min-width: 769px) and (max-width: 1120px) {
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 768px) {
   .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
   .grid-4 { grid-template-columns: 1fr 1fr; }
   h1 { font-size: 24px; }
-  .card { padding: 18px; }
+  .card { padding: 16px; }
   .tabs { margin-bottom: 16px; }
   .tab-item { padding: 10px 14px; }
   .filter-bar { align-items: stretch; margin-bottom: 0; }
   .filter-bar .form-control { width: 100%; min-width: 0; }
+  .filter-bar .btn { width: 100%; }
   table.data-table th,
   table.data-table td { padding: 10px 12px; }
+  table.data-table { min-width: 700px; }
   .row-actions { flex-wrap: wrap; }
+  .page-header { gap: 10px; }
+  .page-header > .flex { width: 100%; }
+  .page-header > .flex .btn { flex: 1; }
+  .page-header > .btn,
+  .page-header > a.btn { width: 100%; }
+  .overlay { padding: 12px; align-items: flex-end; }
+  .modal {
+    border-radius: 12px 12px 0 0;
+    max-height: min(88dvh, 88vh);
+  }
+  .modal-header,
+  .modal-body,
+  .modal-footer { padding-left: 16px; padding-right: 16px; }
+  .modal-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .modal-footer .btn { width: 100%; }
+  .slideover {
+    width: 100%;
+    max-width: 100%;
+  }
+  .slideover-header,
+  .slideover-body,
+  .slideover-footer { padding-left: 16px; padding-right: 16px; }
+  .slideover-footer {
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .slideover-footer .btn { width: 100%; }
   .toast-container { right: 12px; left: 12px; width: auto; }
 }
 @media (max-width: 480px) {

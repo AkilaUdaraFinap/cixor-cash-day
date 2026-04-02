@@ -19,7 +19,7 @@ import { Customer } from '../../shared/models/models';
     </div>
 
     <div class="card mb-4">
-      <input class="form-control" placeholder="Search by name, TIN, email…" [(ngModel)]="search" style="max-width:320px"/>
+      <input class="form-control customer-search" placeholder="Search by name, TIN, email…" [(ngModel)]="search"/>
     </div>
 
     <div class="card card-flush">
@@ -60,7 +60,14 @@ import { Customer } from '../../shared/models/models';
         </ng-template>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .customer-search { max-width: 320px; }
+
+    @media (max-width: 768px) {
+      .customer-search { max-width: 100%; }
+    }
+  `]
 })
 export class CustomerListComponent implements OnInit {
   private svc = inject(MockDataService);

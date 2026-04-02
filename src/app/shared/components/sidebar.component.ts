@@ -115,6 +115,59 @@ interface NavItem { icon: string; label: string; route: string; }
     .user-info { min-width: 0; }
     .user-info .font-medium, .user-info .text-sm { color: var(--sidebar-text); }
     .user-info .text-muted { color: var(--sidebar-muted); }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        min-height: calc(68px + env(safe-area-inset-bottom));
+        height: calc(68px + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+        z-index: 250;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, .18);
+      }
+      .sidebar.collapsed { width: 100vw; }
+      .sidebar-brand,
+      .sidebar-footer,
+      .collapse-btn { display: none; }
+      .sidebar-nav {
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: 6px;
+        padding: 7px 10px;
+      }
+      .nav-item {
+        flex: 1;
+        border-left: none;
+        border-radius: 10px;
+        padding: 6px 4px;
+        gap: 4px;
+        min-width: 0;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+      }
+      .nav-item.active {
+        border-left-color: transparent;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-active-border) 58%, transparent);
+      }
+      .nav-label {
+        display: block !important;
+        font-size: 10px;
+        line-height: 1.1;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .nav-icon { width: auto; }
+      .nav-icon :deep(svg) { width: 17px; height: 17px; }
+    }
   `]
 })
 export class SidebarComponent implements OnInit {

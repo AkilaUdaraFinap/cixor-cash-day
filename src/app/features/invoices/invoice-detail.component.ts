@@ -58,42 +58,44 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
         <div class="meta-span" *ngIf="inv.additionalInformation"><span class="block-label">Additional Information</span><div class="font-medium mt-1">{{ inv.additionalInformation }}</div></div>
       </div>
 
-      <table class="invoice-table mt-6">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Reference</th>
-            <th>Description of Goods or Services</th>
-            <th class="text-right">Quantity</th>
-            <th class="text-right">Unit Price</th>
-            <th class="text-right">Amount Excl. VAT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let line of inv.lines; let index = index">
-            <td>{{ index + 1 }}</td>
-            <td>{{ line.reference || '—' }}</td>
-            <td>{{ line.description }}</td>
-            <td class="text-right">{{ line.qty }}</td>
-            <td class="text-right lkr-mono">{{ line.unitPrice | lkr }}</td>
-            <td class="text-right lkr-mono">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="5" class="text-right font-medium">Total Value of Supply</td>
-            <td class="text-right lkr-mono">{{ inv.netAmount | lkr }}</td>
-          </tr>
-          <tr>
-            <td colspan="5" class="text-right font-medium">VAT Amount</td>
-            <td class="text-right lkr-mono">{{ inv.vatAmount | lkr }}</td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="5" class="text-right font-bold">Total Amount including VAT</td>
-            <td class="text-right lkr-mono font-bold">{{ inv.grossAmount | lkr }}</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="invoice-table-wrap mt-6">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Reference</th>
+              <th>Description of Goods or Services</th>
+              <th class="text-right">Quantity</th>
+              <th class="text-right">Unit Price</th>
+              <th class="text-right">Amount Excl. VAT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of inv.lines; let index = index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ line.reference || '—' }}</td>
+              <td>{{ line.description }}</td>
+              <td class="text-right">{{ line.qty }}</td>
+              <td class="text-right lkr-mono">{{ line.unitPrice | lkr }}</td>
+              <td class="text-right lkr-mono">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="text-right font-medium">Total Value of Supply</td>
+              <td class="text-right lkr-mono">{{ inv.netAmount | lkr }}</td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-right font-medium">VAT Amount</td>
+              <td class="text-right lkr-mono">{{ inv.vatAmount | lkr }}</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="5" class="text-right font-bold">Total Amount including VAT</td>
+              <td class="text-right lkr-mono font-bold">{{ inv.grossAmount | lkr }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
       <div class="words-row mt-4">
         <span class="block-label">Total Amount in Words</span>
@@ -139,6 +141,7 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
     .meta-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
     .meta-span { grid-column:span 2; }
     .block-label, .section-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#475569; font-weight:700; }
+    .invoice-table-wrap { overflow-x: auto; }
     .invoice-table { width:100%; border-collapse:collapse; }
     .invoice-table th { background:var(--brand); color:#fff; padding:10px 12px; font-size:12px; text-align:left; }
     .invoice-table th.text-right, .invoice-table td.text-right { text-align:right; }
@@ -154,6 +157,7 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
       .invoice-paper { padding:24px; }
       .invoice-grid, .meta-grid { grid-template-columns:1fr; }
       .meta-span { grid-column:auto; }
+      .invoice-table { min-width: 700px; }
     }
     @media print {
       .page-header { display: none !important; }

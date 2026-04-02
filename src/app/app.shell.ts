@@ -28,7 +28,9 @@ import { ThemeService } from './core/services/theme.service';
     .app-content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
 
     @media (max-width: 768px) {
-      .app-content { padding: 14px; }
+      .app-shell { display: block; height: 100dvh; }
+      .app-main { height: 100dvh; }
+      .app-content { padding: 14px 14px calc(86px + env(safe-area-inset-bottom)); }
     }
   `]
 })

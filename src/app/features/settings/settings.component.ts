@@ -222,6 +222,11 @@ import { ThemeMode, ThemePalette, ThemeService } from '../../core/services/theme
     }
     .mode-pill.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
     @media (max-width: 768px) {
+      .settings-card { max-width: 100%; }
+      .tabs { margin-bottom: 0; }
+      .tab-item { padding: 10px 12px; }
+      .mode-switch { grid-template-columns: 1fr; }
+      .table-wrap .form-control { min-width: 120px; }
       .theme-grid { grid-template-columns: 1fr; }
     }
     @media (min-width: 769px) and (max-width: 1120px) {
