@@ -1,0 +1,22 @@
+{
+  "name": "CashDay",
+  "short_name": "CashDay",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1220",
+  "theme_color": "#1FAD4E",
+  "description": "CashDay SME Financial Co-Pilot",
+  "icons": [
+    {
+      "src": "/cashday-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/cashday-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

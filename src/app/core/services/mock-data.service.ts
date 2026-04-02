@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Observable, of, delay, throwError } from 'rxjs';
 import {
   AppUser,
   BankBalanceEntry,
@@ -267,7 +267,19 @@ export class MockDataService {
   }
 
   saveCompanyConfig(config: CompanyConfig): Observable<CompanyConfig> {
-    this.company = { ...config };
+    const error = this.validateCompanyConfig(config);
+    if (error) return throwError(() => new Error(error));
+    this.company = {
+      ...config,
+      companyName: config.companyName.trim(),
+      tin: config.tin.trim().toUpperCase(),
+      brn: config.brn?.trim() || '',
+      address: config.address?.trim() || '',
+      emailDomain: config.emailDomain?.trim().toLowerCase() || '',
+      phone: config.phone?.trim() || '',
+      branchCode: this.normalizeBranchCode(config.branchCode),
+      vatRate: Number(config.vatRate),
+    };
     return of({ ...this.company }).pipe(delay(80));
   }
 
@@ -276,7 +288,14 @@ export class MockDataService {
   }
 
   savePaymentTerms(terms: PaymentTerm[]): Observable<PaymentTerm[]> {
-    this.paymentTermsList = terms.map(term => ({ ...term }));
+    const error = this.validatePaymentTerms(terms);
+    if (error) return throwError(() => new Error(error));
+    this.paymentTermsList = terms.map(term => ({
+      ...term,
+      label: term.label.trim(),
+      days: Number(term.days),
+      isDefault: !!term.isDefault,
+    }));
     return of(this.paymentTermsList.map(term => ({ ...term }))).pipe(delay(80));
   }
 
@@ -285,8 +304,16 @@ export class MockDataService {
   }
 
   saveBankBalance(entry: { bank: string; account: string; balance: number; date: string }): Observable<void> {
-    this.company.currentBalance = Math.round(entry.balance);
-    this.bankHistory.unshift({ ...entry, balance: Math.round(entry.balance) });
+    const error = this.validateBankBalance(entry);
+    if (error) return throwError(() => new Error(error));
+    const normalizedEntry = {
+      bank: entry.bank.trim(),
+      account: entry.account.trim(),
+      balance: Math.round(entry.balance),
+      date: this.normalizeDate(entry.date),
+    };
+    this.company.currentBalance = normalizedEntry.balance;
+    this.bankHistory.unshift(normalizedEntry);
     return of(undefined).pipe(delay(80));
   }
 
@@ -300,11 +327,25 @@ export class MockDataService {
   }
 
   saveCustomer(customer: Customer): Observable<Customer> {
+    const error = this.validateCustomer(customer);
+    if (error) return throwError(() => new Error(error));
     const next = this.cloneCustomer(customer);
     if (!next.id || next.id === 'new') next.id = 'c' + Date.now();
+    next.name = next.name.trim();
+    next.tin = next.tin?.trim() || '';
+    next.vatRegNo = next.vatRegNo?.trim() || '';
+    next.brn = next.brn?.trim() || '';
+    next.email = next.email?.trim().toLowerCase() || '';
+    next.phone = next.phone?.trim() || '';
+    next.address = next.address?.trim() || '';
     next.officers = next.officers.map((officer, index) => ({
       ...officer,
       id: officer.id || 'o' + Date.now() + index,
+      name: officer.name?.trim() || '',
+      designation: officer.designation?.trim() || '',
+      email: officer.email?.trim().toLowerCase() || '',
+      mobile: officer.mobile?.trim() || '',
+      nic: officer.nic?.trim() || '',
       isPrimary: !!officer.isPrimary,
     }));
     if (!next.officers.some(officer => officer.isPrimary) && next.officers.length) {
@@ -660,6 +701,77 @@ export class MockDataService {
       ...invoice,
       lines: invoice.lines.map(line => ({ ...line })),
     };
+  }
+
+  private validateCompanyConfig(config: CompanyConfig): string | null {
+    if (!config.companyName?.trim()) return 'Legal company name is required.';
+    if (!this.isTinValid(config.tin)) return 'Enter a valid TIN using 9 to 15 letters or numbers.';
+    if (!/^[A-Z0-9]{1,4}$/.test(this.normalizeBranchCode(config.branchCode))) return 'Branch code must be 1 to 4 uppercase letters or numbers.';
+    const vatRate = Number(config.vatRate);
+    if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 100) return 'Tax rate must be between 0 and 100.';
+    if (config.phone?.trim() && !this.isPhoneValid(config.phone)) return 'Enter a valid telephone number.';
+    if (config.emailDomain?.trim() && !this.isDomainValid(config.emailDomain)) return 'Enter a valid email domain such as company.lk.';
+    return null;
+  }
+
+  private validatePaymentTerms(terms: PaymentTerm[]): string | null {
+    if (!terms.length) return 'Add at least one payment term.';
+    if (terms.some(term => !term.label?.trim())) return 'Every payment term needs a name.';
+    if (terms.some(term => !Number.isInteger(Number(term.days)) || Number(term.days) < 0 || Number(term.days) > 365)) return 'Payment term days must be whole numbers between 0 and 365.';
+    const labels = terms.map(term => term.label.trim().toLowerCase());
+    if (new Set(labels).size !== labels.length) return 'Payment term names must be unique.';
+    if (!terms.some(term => term.isDefault)) return 'Select a default payment term.';
+    return null;
+  }
+
+  private validateBankBalance(entry: { bank: string; account: string; balance: number; date: string }): string | null {
+    if (!entry.bank?.trim()) return 'Bank name is required.';
+    if (!entry.account?.trim()) return 'Account number is required.';
+    if (!Number.isFinite(Number(entry.balance)) || Number(entry.balance) < 0) return 'Current bank balance must be zero or greater.';
+    if (!entry.date || Number.isNaN(new Date(`${entry.date}T00:00:00`).getTime())) return 'Select a valid balance date.';
+    return null;
+  }
+
+  private validateCustomer(customer: Customer): string | null {
+    if (!customer.name?.trim()) return 'Customer name is required.';
+    if (!customer.email?.trim() || !this.isEmailValid(customer.email)) return 'Enter a valid customer email address.';
+    if (customer.phone?.trim() && !this.isPhoneValid(customer.phone)) return 'Enter a valid customer phone number.';
+    if (!customer.officers?.length) return 'At least one authorized officer is required for invoice acceptance.';
+    if (!customer.officers.some(officer => officer.isPrimary)) return 'Select one primary authorized officer.';
+    for (const officer of customer.officers) {
+      if (!officer.name?.trim()) return 'Every authorized officer needs a full name.';
+      if (!officer.designation?.trim()) return 'Every authorized officer needs a designation.';
+      if (!officer.email?.trim() || !this.isEmailValid(officer.email)) return 'Every authorized officer needs a valid email address.';
+      if (!officer.mobile?.trim() || !this.isPhoneValid(officer.mobile)) return 'Every authorized officer needs a valid mobile number.';
+    }
+    return null;
+  }
+
+  private normalizeBranchCode(value: string): string {
+    return (value || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+  }
+
+  private normalizeDate(value: string): string {
+    if (!value.includes('-')) return value;
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) return value;
+    return `${month}/${day}/${year}`;
+  }
+
+  private isTinValid(value: string): boolean {
+    return /^[A-Za-z0-9]{9,15}$/.test((value || '').trim());
+  }
+
+  private isEmailValid(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((value || '').trim());
+  }
+
+  private isPhoneValid(value: string): boolean {
+    return /^[+()\d\s-]{7,20}$/.test((value || '').trim());
+  }
+
+  private isDomainValid(value: string): boolean {
+    return /^(?=.{3,253}$)([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[A-Za-z]{2,}$/.test((value || '').trim());
   }
 
   private maskEmail(email: string): string {

@@ -20,10 +20,10 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
       </div>
       <div class="flex gap-2 flex-wrap">
         <a *ngIf="invoice()?.status === 'Draft'" [routerLink]="['/invoices', invoice()?.id, 'edit']" class="btn btn-secondary">Edit</a>
-        <button *ngIf="invoice()?.status === 'Draft'" class="btn btn-primary" type="button" (click)="sendInvoice()">Send</button>
+        <button *ngIf="invoice()?.status === 'Draft'" class="btn btn-primary" type="button" (click)="requestAction('send')">Send</button>
         <button class="btn btn-secondary" type="button" (click)="downloadPdf()">Download PDF</button>
-        <button *ngIf="canLiquidate()" class="btn btn-outline-accent" type="button" (click)="confirmLiquidity()">Liquidate Now</button>
-        <button *ngIf="canSettle()" class="btn btn-success" type="button" (click)="markSettled()">Mark as Settled</button>
+        <button *ngIf="canLiquidate()" class="btn btn-outline-accent" type="button" (click)="requestAction('liquidate')">Liquidate Now</button>
+        <button *ngIf="canSettle()" class="btn btn-success" type="button" (click)="requestAction('settle')">Mark as Settled</button>
       </div>
     </div>
 
@@ -125,6 +125,24 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
         This is a system-generated Tax Invoice from CIXOR CashDay.
       </div>
     </div>
+
+    <ng-container *ngIf="pendingAction() as action">
+      <div class="overlay" (click.self)="closeActionDialog()" (keydown.escape)="closeActionDialog()" tabindex="-1">
+        <div class="modal" style="max-width:500px" role="dialog" aria-modal="true" aria-labelledby="invoice-action-title">
+          <div class="modal-header">
+            <h3 id="invoice-action-title">{{ actionTitle(action) }}</h3>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="closeActionDialog()" aria-label="Close dialog">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="text-sm">{{ actionMessage(action) }}</div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" type="button" (click)="closeActionDialog()">Cancel</button>
+            <button class="btn btn-primary" type="button" (click)="confirmAction()">{{ actionCta(action) }}</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   `,
   styles: [`
     .invoice-paper {
@@ -192,6 +210,7 @@ export class InvoiceDetailComponent implements OnInit {
   private hasTriggeredAutoPrint = false;
 
   invoice = signal<Invoice | null>(null);
+  pendingAction = signal<'send' | 'liquidate' | 'settle' | null>(null);
   invoiceCompanyPhone = computed(() => this.invoice()?.supplierName ? '+94 11 234 5678' : '—');
   timeline = computed(() => {
     const invoice = this.invoice();
@@ -222,7 +241,39 @@ export class InvoiceDetailComponent implements OnInit {
     return !!invoice && !['Draft', 'Rejected', 'Settled'].includes(invoice.status);
   }
 
-  sendInvoice(): void {
+  requestAction(action: 'send' | 'liquidate' | 'settle'): void {
+    this.pendingAction.set(action);
+  }
+
+  closeActionDialog(): void {
+    this.pendingAction.set(null);
+  }
+
+  actionTitle(action: 'send' | 'liquidate' | 'settle'): string {
+    return action === 'send' ? 'Send Invoice' : action === 'liquidate' ? 'Confirm Liquidity' : 'Mark Invoice as Settled';
+  }
+
+  actionCta(action: 'send' | 'liquidate' | 'settle'): string {
+    return action === 'send' ? 'Send Invoice' : action === 'liquidate' ? 'Confirm Liquidity' : 'Mark as Settled';
+  }
+
+  actionMessage(action: 'send' | 'liquidate' | 'settle'): string {
+    const serial = this.invoice()?.serialNumber || 'this invoice';
+    if (action === 'send') return `Send ${serial} to the debtor officer for OTP acceptance?`;
+    if (action === 'liquidate') return `Confirm liquidity for ${serial}. This settles the invoice through CIXOR PayDay and applies the liquidity fee.`;
+    return `Mark ${serial} as settled. This should only be done after settlement is confirmed.`;
+  }
+
+  confirmAction(): void {
+    const action = this.pendingAction();
+    if (!action) return;
+    this.pendingAction.set(null);
+    if (action === 'send') this.sendInvoice();
+    if (action === 'liquidate') this.confirmLiquidity();
+    if (action === 'settle') this.markSettled();
+  }
+
+  private sendInvoice(): void {
     const invoice = this.invoice();
     if (!invoice) return;
     this.svc.sendInvoice(invoice.id).subscribe(updated => {
@@ -231,7 +282,7 @@ export class InvoiceDetailComponent implements OnInit {
     });
   }
 
-  markSettled(): void {
+  private markSettled(): void {
     const invoice = this.invoice();
     if (!invoice) return;
     this.svc.markInvoiceSettled(invoice.id).subscribe(updated => {
@@ -240,7 +291,7 @@ export class InvoiceDetailComponent implements OnInit {
     });
   }
 
-  confirmLiquidity(): void {
+  private confirmLiquidity(): void {
     const invoice = this.invoice();
     if (!invoice) return;
     this.svc.confirmLiquidity(invoice.id).subscribe(updated => {

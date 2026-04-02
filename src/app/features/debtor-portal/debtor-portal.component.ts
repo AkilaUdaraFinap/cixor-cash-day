@@ -91,31 +91,66 @@ type Decision = 'Accepted' | 'Rejected' | null;
           <div><span class="text-muted">Place of Supply</span><div class="font-medium mt-1">{{ inv.placeOfSupply || '—' }}</div></div>
         </div>
 
-        <table class="invoice-table-portal mt-4">
-          <thead>
-            <tr>
-              <th>Reference</th>
-              <th>Description</th>
-              <th class="text-right">Quantity</th>
-              <th class="text-right">Unit Price</th>
-              <th class="text-right">Amount Excl. VAT</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let line of inv.lines">
-              <td>{{ line.reference || '—' }}</td>
-              <td>{{ line.description }}</td>
-              <td class="text-right">{{ line.qty }}</td>
-              <td class="text-right lkr-mono">{{ line.unitPrice | lkr }}</td>
-              <td class="text-right lkr-mono">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr><td colspan="4" class="text-right">Total Value of Supply</td><td class="text-right lkr-mono">{{ inv.netAmount | lkr }}</td></tr>
-            <tr><td colspan="4" class="text-right">VAT Amount</td><td class="text-right lkr-mono">{{ inv.vatAmount | lkr }}</td></tr>
-            <tr class="total-row"><td colspan="4" class="text-right font-bold">Total Amount including VAT</td><td class="text-right lkr-mono font-bold">{{ inv.grossAmount | lkr }}</td></tr>
-          </tfoot>
-        </table>
+        <div class="invoice-table-portal-wrap mt-4 desktop-line-items">
+          <table class="invoice-table-portal">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Description</th>
+                <th class="text-right">Quantity</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Amount Excl. VAT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of inv.lines">
+                <td>{{ line.reference || '—' }}</td>
+                <td>{{ line.description }}</td>
+                <td class="text-right">{{ line.qty }}</td>
+                <td class="text-right lkr-mono">{{ line.unitPrice | lkr }}</td>
+                <td class="text-right lkr-mono">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr><td colspan="4" class="text-right">Total Value of Supply</td><td class="text-right lkr-mono">{{ inv.netAmount | lkr }}</td></tr>
+              <tr><td colspan="4" class="text-right">VAT Amount</td><td class="text-right lkr-mono">{{ inv.vatAmount | lkr }}</td></tr>
+              <tr class="total-row"><td colspan="4" class="text-right font-bold">Total Amount including VAT</td><td class="text-right lkr-mono font-bold">{{ inv.grossAmount | lkr }}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="mobile-line-items mt-4">
+          <div class="line-item-card" *ngFor="let line of inv.lines; let index = index">
+            <div class="line-item-card-top">
+              <div>
+                <div class="text-muted text-xs">Line {{ index + 1 }}</div>
+                <div class="font-medium mt-1">{{ line.reference || 'No reference' }}</div>
+              </div>
+              <div class="lkr-mono font-medium">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</div>
+            </div>
+            <div class="mt-3">{{ line.description }}</div>
+            <div class="line-item-grid">
+              <div>
+                <span class="text-muted">Quantity</span>
+                <strong>{{ line.qty }}</strong>
+              </div>
+              <div>
+                <span class="text-muted">Unit Price</span>
+                <strong class="lkr-mono">{{ line.unitPrice | lkr }}</strong>
+              </div>
+              <div>
+                <span class="text-muted">Subtotal</span>
+                <strong class="lkr-mono">{{ (line.qty * line.unitPrice - (line.discount || 0)) | lkr }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="mobile-totals-card">
+            <div class="mobile-total-row"><span>Total Value of Supply</span><strong class="lkr-mono">{{ inv.netAmount | lkr }}</strong></div>
+            <div class="mobile-total-row"><span>VAT Amount</span><strong class="lkr-mono">{{ inv.vatAmount | lkr }}</strong></div>
+            <div class="mobile-total-row total"><span>Total incl. VAT</span><strong class="lkr-mono">{{ inv.grossAmount | lkr }}</strong></div>
+          </div>
+        </div>
 
         <div class="words-box mt-4">{{ inv.grossAmount | numberToWords }}</div>
 
@@ -191,11 +226,19 @@ type Decision = 'Accepted' | 'Rejected' | null;
     .summary-card div { display:flex; justify-content:space-between; gap:12px; }
     .btn-block { width:100%; }
     .portal-metadata { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+    .invoice-table-portal-wrap { overflow-x:auto; }
     .invoice-table-portal { width:100%; border-collapse:collapse; }
     .invoice-table-portal th { background:var(--brand); color:#fff; padding:10px 12px; text-align:left; font-size:12px; }
     .invoice-table-portal td { padding:10px 12px; border-bottom:1px solid var(--border); }
     .invoice-table-portal th.text-right, .invoice-table-portal td.text-right { text-align:right; }
     .invoice-table-portal .total-row td { background:var(--bg); border-top:2px solid var(--brand); }
+    .mobile-line-items { display:none; }
+    .line-item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .line-item-card-top { display:flex; align-items:flex-start; justify-content:space-between; }
+    .line-item-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; margin-top:14px; }
+    .mobile-totals-card { margin-top: 12px; padding: 16px; background: var(--bg); border-radius: 12px; }
+    .mobile-total-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
+    .mobile-total-row.total { color:var(--brand); font-weight:700; }
     .words-box { background:#F0FDF4; border:1px solid #86EFAC; color:#166534; border-radius:8px; padding:14px 16px; }
     .consent-box { background:#FFFBEB; border:1px solid #FCD34D; border-radius:10px; padding:16px; }
     .consent-box ul { padding-left:18px; margin:0; }
@@ -207,7 +250,18 @@ type Decision = 'Accepted' | 'Rejected' | null;
     @media (max-width: 760px) {
       .portal-card { padding:24px; }
       .portal-metadata { grid-template-columns:1fr; }
+      .desktop-line-items { display:none; }
+      .mobile-line-items { display:block; }
+      .line-item-card-top { flex-direction:column; }
+      .line-item-grid { grid-template-columns:1fr; }
       .portal-actions { grid-template-columns:1fr; }
+      .portal-actions {
+        position: sticky;
+        bottom: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: var(--surface);
+      }
       .step-label { display:none; }
     }
   `],

@@ -53,8 +53,9 @@ import { Customer, Invoice } from '../../shared/models/models';
       <div>
         <div class="card">
           <h3 class="section-title">Invoice History</h3>
-          <div class="table-wrap">
-            <table class="data-table" *ngIf="invoices().length > 0; else noInvoices">
+          <div class="desktop-table-only" *ngIf="invoices().length > 0">
+            <div class="table-wrap">
+              <table class="data-table">
               <thead>
                 <tr>
                   <th>Invoice No.</th><th>Date</th><th>Due</th>
@@ -70,11 +71,29 @@ import { Customer, Invoice } from '../../shared/models/models';
                   <td><span class="badge" [ngClass]="statusBadge(inv.status)">{{ inv.status }}</span></td>
                 </tr>
               </tbody>
-            </table>
-            <ng-template #noInvoices>
-              <div class="p-8 text-center text-muted text-sm">No invoices for this customer yet.</div>
-            </ng-template>
+              </table>
+            </div>
           </div>
+
+          <div class="mobile-cards-only" *ngIf="invoices().length > 0">
+            <div class="mobile-data-list">
+              <div class="mobile-data-card" *ngFor="let inv of invoices()">
+                <div class="mobile-data-card-header">
+                  <div>
+                    <a [routerLink]="['/invoices', inv.id]" class="mobile-data-card-title text-accent">{{ inv.serialNumber }}</a>
+                    <div class="mobile-data-card-subtitle">Due {{ inv.dueDate }}</div>
+                  </div>
+                  <span class="badge" [ngClass]="statusBadge(inv.status)">{{ inv.status }}</span>
+                </div>
+                <div class="mobile-data-grid">
+                  <div class="mobile-data-row"><span class="mobile-data-label">Invoice Date</span><span class="mobile-data-value">{{ inv.invoiceDate }}</span></div>
+                  <div class="mobile-data-row"><span class="mobile-data-label">Gross (LKR)</span><span class="mobile-data-value lkr-mono">{{ inv.grossAmount | lkr }}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!invoices().length" class="p-8 text-center text-muted text-sm">No invoices for this customer yet.</div>
         </div>
       </div>
     </div>

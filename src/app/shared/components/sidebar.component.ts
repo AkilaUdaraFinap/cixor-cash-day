@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { AppUser } from '../models/models';
 
-interface NavItem { icon: string; label: string; route: string; }
+interface NavItem { iconPath: string; label: string; route: string; }
 
 @Component({
   selector: 'app-sidebar',
@@ -29,7 +29,11 @@ interface NavItem { icon: string; label: string; route: string; }
            class="nav-item"
            [class.active]="isActive(item.route)"
            [title]="collapsed() ? item.label : ''">
-          <span class="nav-icon" [innerHTML]="item.icon"></span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path [attr.d]="item.iconPath"></path>
+            </svg>
+          </span>
           <span class="nav-label">{{ item.label }}</span>
         </a>
       </nav>
@@ -99,8 +103,8 @@ interface NavItem { icon: string; label: string; route: string; }
       &:hover { background: var(--sidebar-hover); color: var(--sidebar-text); text-decoration: none; }
       &.active { background: var(--sidebar-active-bg); color: var(--sidebar-text); border-left-color: var(--sidebar-active-border); }
     }
-    .nav-icon { width: 20px; flex-shrink: 0; display: flex; }
-    .nav-icon ::ng-deep svg { width: 18px; height: 18px; }
+    .nav-icon { width: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .nav-icon svg { width: 18px; height: 18px; display: block; overflow: visible; }
     .nav-label { }
     .sidebar.collapsed .nav-label { display: none; }
     .sidebar-footer {
@@ -187,7 +191,7 @@ interface NavItem { icon: string; label: string; route: string; }
         align-items: center;
         justify-content: center;
       }
-      .nav-icon ::ng-deep svg { width: 22px; height: 22px; }
+      .nav-icon svg { width: 22px; height: 22px; }
     }
   `]
 })
@@ -199,11 +203,11 @@ export class SidebarComponent implements OnInit {
   currentRoute = signal('');
 
   navItems: NavItem[] = [
-    { label: 'Dashboard', route: '/dashboard', icon: `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>` },
-    { label: 'Invoices',  route: '/invoices',  icon: `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>` },
-    { label: 'Customers', route: '/customers', icon: `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 14.094A5.973 5.973 0 004 17v1H1v-1a3 3 0 013.75-2.906z"/></svg>` },
-    { label: 'Users',     route: '/users',     icon: `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>` },
-    { label: 'Settings',  route: '/settings',  icon: `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>` },
+    { label: 'Dashboard', route: '/dashboard', iconPath: 'M3.5 4.5h5v5h-5zm8 0h5v5h-5zm-8 8h5v5h-5zm8 0h5v5h-5z' },
+    { label: 'Invoices', route: '/invoices', iconPath: 'M6.5 2.5h4l4 4V16a1.5 1.5 0 0 1-1.5 1.5h-6A1.5 1.5 0 0 1 5.5 16V4A1.5 1.5 0 0 1 6.5 2.5zm3.5 1v3.5H13.5M7.5 10h5m-5 3h5' },
+    { label: 'Customers', route: '/customers', iconPath: 'M6.5 8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm7 1a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM3.5 16a4 4 0 0 1 6-3.465A4 4 0 0 1 15.5 16m-4.5-1a3.5 3.5 0 0 1 5-2.2A3.3 3.3 0 0 1 17 15.5' },
+    { label: 'Users', route: '/users', iconPath: 'M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5.5 7a5.5 5.5 0 0 1 11 0' },
+    { label: 'Settings', route: '/settings', iconPath: 'M10 3.5v2m0 9v2m6.5-6.5h-2m-9 0h-2m11.1-4.6-1.4 1.4m-6.2 6.2-1.4 1.4m0-9 1.4 1.4m6.2 6.2 1.4 1.4M10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
   ];
 
   ngOnInit() {

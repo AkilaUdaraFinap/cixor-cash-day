@@ -633,6 +633,35 @@ html[data-mode='dark'] .form-control.cd-date-input:focus {
 textarea.form-control { resize: vertical; min-height: 80px; }
 select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 
+/* Standardize dropdown comfort inside modal and slideover forms */
+.modal-body select.form-control,
+.slideover-body select.form-control,
+.modal-body .choices.cd-choices .choices__inner,
+.slideover-body .choices.cd-choices .choices__inner {
+  min-height: 44px;
+}
+
+.modal-body .form-group,
+.slideover-body .form-group {
+  transition: margin-bottom .16s ease;
+}
+
+.modal-body .form-group:has(select.form-control:focus),
+.modal-body .form-group:has(.choices.is-open),
+.slideover-body .form-group:has(select.form-control:focus),
+.slideover-body .form-group:has(.choices.is-open) {
+  margin-bottom: 100px;
+}
+
+@media (max-width: 768px) {
+  .modal-body .form-group:has(select.form-control:focus),
+  .modal-body .form-group:has(.choices.is-open),
+  .slideover-body .form-group:has(select.form-control:focus),
+  .slideover-body .form-group:has(.choices.is-open) {
+    margin-bottom: 76px;
+  }
+}
+
 .choices.cd-choices {
   margin-bottom: 0;
   position: relative;
@@ -852,6 +881,107 @@ html[data-mode='dark'] .choices.cd-choices .choices__list[aria-expanded] .choice
 
 // ── Table ───────────────────────────────────────────────────
 .table-wrap { overflow-x: auto; }
+.desktop-table-only { display: block; }
+.mobile-cards-only { display: none; }
+
+.mobile-data-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-data-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-data-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobile-data-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mobile-data-card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.mobile-data-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.mobile-data-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.mobile-data-label {
+  color: var(--text-secondary);
+}
+
+.mobile-data-value {
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+}
+
+.mobile-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-data-actions .btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 120px;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-controls .btn {
+  min-width: 72px;
+}
+
+.pagination-page {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 78px;
+  text-align: center;
+}
 table.data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1035,7 +1165,7 @@ table.data-table td .btn.btn-ghost {
     justify-content: space-between;
     h3 { margin: 0; }
   }
-  &-body { padding: 24px; }
+  &-body { padding: 24px; overflow-x: visible; }
   &-footer {
     padding: 16px 24px;
     border-top: 1px solid var(--border);
@@ -1074,6 +1204,7 @@ table.data-table td .btn.btn-ghost {
   &-body {
     flex: 1;
     overflow-y: auto;
+    overflow-x: visible;
     padding: 24px;
   }
   &-footer {
@@ -1229,7 +1360,17 @@ html[data-mode='dark'] .info-box.danger { color: color-mix(in srgb, var(--red) 7
   table.data-table th,
   table.data-table td { padding: 10px 12px; }
   table.data-table { min-width: 700px; }
+  .desktop-table-only { display: none; }
+  .mobile-cards-only { display: block; }
   .row-actions { flex-wrap: wrap; }
+  .pagination-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+  }
+  .pagination-info { text-align: center; }
+  .pagination-controls { justify-content: stretch; }
+  .pagination-controls .btn { flex: 1; }
   .page-header { gap: 10px; }
   .page-header > .flex { width: 100%; }
   .page-header > .flex .btn { flex: 1; }
