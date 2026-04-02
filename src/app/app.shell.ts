@@ -5,6 +5,7 @@ import { SidebarComponent } from './shared/components/sidebar.component';
 import { TopbarComponent } from './shared/components/topbar.component';
 import { ToastHostComponent } from './shared/components/toast-host.component';
 import { ThemeService } from './core/services/theme.service';
+import { DatepickerService } from './core/services/datepicker.service';
 
 @Component({
   selector: 'app-shell',
@@ -36,8 +37,10 @@ import { ThemeService } from './core/services/theme.service';
 })
 export class AppShellComponent implements OnInit {
   private theme = inject(ThemeService);
+  private datepicker = inject(DatepickerService);
 
   ngOnInit(): void {
     this.theme.initialize();
+    this.datepicker.initialize();
   }
 }
