@@ -1,9 +1,11 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
 import { AppUser } from '../models/models';
 import { ThemeService, ThemePalette, ThemeMode } from '../../core/services/theme.service';
+import { UserDataService } from '../../core/services/user-data.service';
+import { AuthService } from '../../core/services/auth.service';
+import { NotificationCenterService } from '../../core/services/notification-center.service';
 
 @Component({
   selector: 'app-topbar',
@@ -17,6 +19,21 @@ import { ThemeService, ThemePalette, ThemeMode } from '../../core/services/theme
         <div class="company-sub">SME Financial Co-Pilot</div>
       </div>
       <div class="topbar-right">
+        <button class="icon-btn" type="button" (click)="notificationsOpen.set(!notificationsOpen())" [attr.aria-expanded]="notificationsOpen()" aria-label="Open notifications">
+          <span>🔔</span>
+          <span class="notif-badge" *ngIf="notifications.unreadCount()">{{ notifications.unreadCount() }}</span>
+        </button>
+        <div class="dropdown notifications-dropdown" *ngIf="notificationsOpen()" (click)="onDropdownClick($event)">
+          <div class="dropdown-section">
+            <div class="dropdown-title">Recent Activity</div>
+            <div class="notification-item" *ngFor="let item of notifications.items()">
+              <div class="notification-title">{{ item.title }}</div>
+              <div class="notification-detail">{{ item.detail }}</div>
+              <div class="notification-time">{{ item.createdAt }}</div>
+            </div>
+            <div class="text-muted text-sm" *ngIf="!notifications.items().length">No recent updates.</div>
+          </div>
+        </div>
         <button class="user-menu" type="button" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" aria-label="Open user menu">
           <ng-container *ngIf="user() as currentUser">
             <div class="avatar avatar-md">{{ initials(currentUser.name) }}</div>
@@ -66,7 +83,7 @@ import { ThemeService, ThemePalette, ThemeMode } from '../../core/services/theme
         </div>
       </div>
     </header>
-    <div class="overlay-dismiss" *ngIf="menuOpen()" (click)="menuOpen.set(false)"></div>
+    <div class="overlay-dismiss" *ngIf="menuOpen() || notificationsOpen()" (click)="dismissOverlays()"></div>
   `,
   styles: [`
     .topbar {
@@ -94,6 +111,37 @@ import { ThemeService, ThemePalette, ThemeMode } from '../../core/services/theme
     .company-name { font-weight: 600; font-size: 15px; color: var(--text); }
     .company-sub  { font-size: 12px; color: var(--text-secondary); }
     .topbar-right { display: flex; align-items: center; gap: 12px; position: relative; }
+    .icon-btn {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .notifications-dropdown { min-width: 320px; right: 56px; }
+    .notification-item { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .notification-item:last-child { border-bottom: none; }
+    .notification-title { font-size: 12px; font-weight: 600; color: var(--text); }
+    .notification-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .notification-time { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
     .user-menu {
       display: flex; align-items: center; gap: 8px;
       cursor: pointer; padding: 6px 8px; border-radius: 6px;
@@ -176,19 +224,27 @@ import { ThemeService, ThemePalette, ThemeMode } from '../../core/services/theme
   `]
 })
 export class TopbarComponent implements OnInit {
-  private dataSvc = inject(MockDataService);
-  private router = inject(Router);
+  private readonly userSvc = inject(UserDataService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   theme = inject(ThemeService);
+  notifications = inject(NotificationCenterService);
   menuOpen = signal(false);
+  notificationsOpen = signal(false);
   user = signal<AppUser | null>(null);
-  company = signal('');
+  company = signal('Precision Manufacturing (Pvt) Ltd');
 
   ngOnInit() {
-    this.dataSvc.getUsers().subscribe(users => { this.user.set(users[0] ?? null); });
-    this.dataSvc.getCompanyConfig().subscribe(c => this.company.set(c.companyName));
+    const session = this.auth.session();
+    this.userSvc.getUsers().subscribe(users => {
+      const activeUser = users.find(user => user.id === session?.userId) ?? users[0] ?? null;
+      this.user.set(activeUser);
+    });
+    this.company.set(session?.companyId ? 'Precision Manufacturing (Pvt) Ltd' : 'CashDay Demo Tenant');
   }
   closeMenu() { this.menuOpen.set(false); }
-  signOut() { this.menuOpen.set(false); }
+  dismissOverlays() { this.menuOpen.set(false); this.notificationsOpen.set(false); }
+  signOut() { this.menuOpen.set(false); this.auth.signOut(); this.router.navigate(['/login']); }
   initials(name: string = ''): string { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); }
   onDropdownClick(event: MouseEvent) {
     event.stopPropagation();

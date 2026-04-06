@@ -2,8 +2,9 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { MockDataService } from '../../core/services/mock-data.service';
 import { AppUser } from '../models/models';
+import { UserDataService } from '../../core/services/user-data.service';
+import { AuthService } from '../../core/services/auth.service';
 
 interface NavItem { iconPath: string; label: string; route: string; }
 
@@ -197,7 +198,8 @@ interface NavItem { iconPath: string; label: string; route: string; }
 })
 export class SidebarComponent implements OnInit {
   private router = inject(Router);
-  private dataSvc = inject(MockDataService);
+  private userSvc = inject(UserDataService);
+  private auth = inject(AuthService);
   collapsed = signal(false);
   currentUser = signal<AppUser | null>(null);
   currentRoute = signal('');
@@ -211,7 +213,10 @@ export class SidebarComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.dataSvc.getUsers().subscribe(users => { this.currentUser.set(users[0] ?? null); });
+    const session = this.auth.session();
+    this.userSvc.getUsers().subscribe(users => {
+      this.currentUser.set(users.find(user => user.id === session?.userId) ?? users[0] ?? null);
+    });
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       this.currentRoute.set(e.urlAfterRedirects);
     });

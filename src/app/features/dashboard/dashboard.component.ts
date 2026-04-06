@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
+import { SettingsDataService } from '../../core/services/settings-data.service';
 import { MockDataService } from '../../core/services/mock-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Invoice, RecurringExpense, OneOffExpense, LiquidityImpact } from '../../shared/models/models';

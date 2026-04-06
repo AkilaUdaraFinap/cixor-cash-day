@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppUser, UserRole, UserStatus } from '../../shared/models/models';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { UserDataService } from '../../core/services/user-data.service';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
@@ -234,7 +234,7 @@ import { ToastService } from '../../core/services/toast.service';
   `],
 })
 export class UsersComponent implements OnInit {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(UserDataService);
   private readonly toast = inject(ToastService);
 
   users = signal<AppUser[]>([]);

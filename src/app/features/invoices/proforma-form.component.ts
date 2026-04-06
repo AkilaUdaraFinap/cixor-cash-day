@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy, inject, signal, computed } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { InvoiceDataService } from '../../core/services/invoice-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CompanyConfig, Customer, PaymentTerm, ProformaInvoice } from '../../shared/models/models';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
@@ -217,7 +217,7 @@ interface ProformaFormState {
   `],
 })
 export class ProformaFormComponent implements OnInit {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(InvoiceDataService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

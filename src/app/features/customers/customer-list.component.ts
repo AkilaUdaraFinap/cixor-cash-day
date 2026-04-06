@@ -2,7 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { CustomerDataService } from '../../core/services/customer-data.service';
 import { Customer } from '../../shared/models/models';
 
 @Component({
@@ -104,7 +104,7 @@ import { Customer } from '../../shared/models/models';
   `]
 })
 export class CustomerListComponent implements OnInit {
-  private svc = inject(MockDataService);
+  private svc = inject(CustomerDataService);
   customers = signal<Customer[]>([]);
   search = '';
   readonly pageSize = 8;

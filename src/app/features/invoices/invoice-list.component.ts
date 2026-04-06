@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { InvoiceDataService } from '../../core/services/invoice-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Invoice } from '../../shared/models/models';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
@@ -27,6 +27,9 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
       </a>
       <a routerLink="/invoices/proforma" routerLinkActive="tab-active" class="tab">
         Proforma Invoices
+      </a>
+      <a routerLink="/invoices/external" routerLinkActive="tab-active" class="tab">
+        External Receivables
       </a>
     </div>
 
@@ -225,7 +228,7 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
   `],
 })
 export class InvoiceListComponent implements OnInit {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(InvoiceDataService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -243,6 +246,7 @@ export class InvoiceListComponent implements OnInit {
   filtered = computed(() => {
     const search = this.searchTerm.toLowerCase().trim();
     return this.invoices()
+      .filter(invoice => !invoice.isExternal)
       .filter(invoice => !this.statusFilter || invoice.status === this.statusFilter)
       .filter(invoice => {
         if (!search) return true;

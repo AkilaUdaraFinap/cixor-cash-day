@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CompanyConfig, PaymentTerm, BankAccount, Tax } from '../../shared/models/models';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { SettingsDataService } from '../../core/services/settings-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 import { ThemeMode, ThemePalette, ThemeService } from '../../core/services/theme.service';
@@ -641,7 +641,7 @@ import { ThemeMode, ThemePalette, ThemeService } from '../../core/services/theme
   `],
 })
 export class SettingsComponent implements OnInit {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(SettingsDataService);
   private readonly toast = inject(ToastService);
   private readonly theme = inject(ThemeService);
 

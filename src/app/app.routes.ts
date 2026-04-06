@@ -1,9 +1,12 @@
 import { Routes } from "@angular/router";
+import { authChildGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  { path: 'login', loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {
     path: '',
+    canActivateChild: [authChildGuard],
     loadComponent: () => import('./app.shell').then(m => m.AppShellComponent),
     children: [
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES) },

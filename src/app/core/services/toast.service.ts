@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { NotificationCenterService } from './notification-center.service';
 
 export interface Toast {
   id: number;
@@ -10,10 +11,16 @@ export interface Toast {
 export class ToastService {
   toasts = signal<Toast[]>([]);
   private next = 0;
+  private readonly notifications = inject(NotificationCenterService);
 
   show(type: Toast['type'], message: string, duration = 4000) {
     const id = ++this.next;
     this.toasts.update(t => [...t, { id, type, message }]);
+    this.notifications.push(
+      type === 'success' ? 'Success' : type === 'error' ? 'Action needed' : 'Update',
+      message,
+      type === 'error' ? 'warn' : type === 'warn' ? 'warn' : type === 'success' ? 'success' : 'info'
+    );
     setTimeout(() => this.remove(id), duration);
   }
   success(msg: string) { this.show('success', msg); }

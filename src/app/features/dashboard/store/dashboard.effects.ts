@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { switchMap, map, catchError, debounceTime } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { MockDataService } from '../../../core/services/mock-data.service';
+import { SettingsDataService } from '../../../core/services/settings-data.service';
 import * as A from './dashboard.actions';
 
 @Injectable()
 export class DashboardEffects {
   private actions$ = inject(Actions);
-  private svc = inject(MockDataService);
+  private svc = inject(SettingsDataService);
 
   loadDashboard$ = createEffect(() =>
     this.actions$.pipe(

@@ -13,6 +13,15 @@ export interface LineItem {
 export interface Invoice {
   id: string;
   serialNumber: string;
+  sourceType?: 'cashday' | 'external-manual' | 'external-csv' | 'external-api';
+  isExternal?: boolean;
+  externalInvoiceNo?: string;
+  sourceSystem?: string;
+  importBatchId?: string;
+  importedAt?: string;
+  verificationMode?: 'portal' | 'visibility-only';
+  otpVerifiedAt?: string;
+  acceptedBy?: string;
   customerId: string;
   customerName: string;
   customerTin?: string;

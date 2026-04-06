@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { CustomerDataService } from '../../core/services/customer-data.service';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 import { Customer, Invoice } from '../../shared/models/models';
 
@@ -109,7 +109,7 @@ import { Customer, Invoice } from '../../shared/models/models';
   `]
 })
 export class CustomerDetailComponent implements OnInit {
-  private svc   = inject(MockDataService);
+  private svc   = inject(CustomerDataService);
   private route  = inject(ActivatedRoute);
 
   customer = signal<Customer | null>(null);

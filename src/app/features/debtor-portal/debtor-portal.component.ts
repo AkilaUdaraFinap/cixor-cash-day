@@ -2,12 +2,12 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { PortalDataService } from '../../core/services/portal-data.service';
 import { Invoice } from '../../shared/models/models';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
 
-type Step = 'request' | 'otp' | 'review' | 'confirm';
+type Step = 'request' | 'otp' | 'review' | 'confirm' | 'invalid' | 'expired';
 type Decision = 'Accepted' | 'Rejected' | null;
 
 @Component({
@@ -26,7 +26,7 @@ type Decision = 'Accepted' | 'Rejected' | null;
         </div>
       </div>
 
-      <div class="step-bar">
+      <div class="step-bar" *ngIf="step() !== 'invalid' && step() !== 'expired'">
         <div class="step-item" [class.active]="stepIndex() === 0" [class.done]="stepIndex() > 0"><div class="step-circle">1</div><div class="step-label">Request</div></div>
         <div class="step-line" [class.done]="stepIndex() > 0"></div>
         <div class="step-item" [class.active]="stepIndex() === 1" [class.done]="stepIndex() > 1"><div class="step-circle">2</div><div class="step-label">Verify</div></div>
@@ -34,6 +34,18 @@ type Decision = 'Accepted' | 'Rejected' | null;
         <div class="step-item" [class.active]="stepIndex() === 2" [class.done]="stepIndex() > 2"><div class="step-circle">3</div><div class="step-label">Review</div></div>
         <div class="step-line" [class.done]="stepIndex() > 2"></div>
         <div class="step-item" [class.active]="stepIndex() === 3"><div class="step-circle">4</div><div class="step-label">Confirm</div></div>
+      </div>
+
+      <div *ngIf="step() === 'invalid'" class="portal-card text-center">
+        <div class="portal-confirm-icon" style="background:#FEF2F2;color:#B91C1C">!</div>
+        <h2 class="portal-card-title">Invalid Verification Link</h2>
+        <p class="portal-card-subtitle">{{ portalNotice() || 'This link is no longer valid. Please contact the supplier and request a fresh portal invitation.' }}</p>
+      </div>
+
+      <div *ngIf="step() === 'expired'" class="portal-card text-center">
+        <div class="portal-confirm-icon" style="background:#FFF7ED;color:#C2410C">⌛</div>
+        <h2 class="portal-card-title">Verification Link Expired</h2>
+        <p class="portal-card-subtitle">{{ portalNotice() || 'This portal invitation has expired. Please request a new OTP link from the supplier.' }}</p>
       </div>
 
       <div *ngIf="step() === 'request'" class="portal-card">
@@ -199,6 +211,11 @@ type Decision = 'Accepted' | 'Rejected' | null;
             Your rejection has been recorded and the supplier has been notified.
           </ng-container>
         </p>
+        <div class="summary-card mt-4" *ngIf="invoice() as inv">
+          <div><span class="text-muted">Reference</span><strong>{{ inv.serialNumber }}</strong></div>
+          <div><span class="text-muted">OTP Verified</span><strong>{{ inv.otpVerifiedAt || todayStamp() }}</strong></div>
+          <div><span class="text-muted">Decision By</span><strong>{{ inv.acceptedBy || inv.debtorOfficerName || inv.debtorOfficerEmail || 'Verified debtor officer' }}</strong></div>
+        </div>
         <div class="text-muted text-sm mt-4">You may now close this window.</div>
       </div>
     </div>
@@ -267,7 +284,7 @@ type Decision = 'Accepted' | 'Rejected' | null;
   `],
 })
 export class DebtorPortalComponent implements OnInit, OnDestroy {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(PortalDataService);
   private readonly route = inject(ActivatedRoute);
 
   token = '';
@@ -275,6 +292,7 @@ export class DebtorPortalComponent implements OnInit, OnDestroy {
   invoice = signal<Invoice | null>(null);
   error = signal('');
   rateLimitMessage = signal('');
+  portalNotice = signal('');
   maskedDestination = signal('your registered email');
   decision = signal<Decision>(null);
   showRejectReason = signal(false);
@@ -285,8 +303,9 @@ export class DebtorPortalComponent implements OnInit, OnDestroy {
   otpBoxes = Array.from({ length: 6 }, (_, index) => index);
   private timer?: ReturnType<typeof setInterval>;
 
-  stepIndex = computed(() => ({ request: 0, otp: 1, review: 2, confirm: 3 }[this.step()]));
+  stepIndex = computed(() => ({ request: 0, otp: 1, review: 2, confirm: 3, invalid: 0, expired: 0 }[this.step()]));
   otpValue = computed(() => this.otpDigits.join(''));
+  todayStamp = computed(() => new Date().toLocaleDateString('en-US'));
   countdownLabel = computed(() => {
     const total = this.countdown();
     const minutes = Math.floor(total / 60).toString().padStart(2, '0');
@@ -295,13 +314,39 @@ export class DebtorPortalComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.paramMap.get('token') || 'inv2';
+    this.token = this.route.snapshot.paramMap.get('token') || '';
+    const forceExpired = this.route.snapshot.queryParamMap.get('expired') === '1';
+    if (forceExpired) {
+      this.portalNotice.set('This invitation has expired. Please ask the supplier to send a new portal link.');
+      this.step.set('expired');
+      return;
+    }
+
     this.svc.resolvePortalToken(this.token).subscribe(invoice => {
-      if (invoice) {
-        this.invoice.set(invoice);
+      if (!invoice) {
+        this.portalNotice.set('This verification link is invalid or has already been replaced.');
+        this.step.set('invalid');
         return;
       }
-      this.svc.getInvoices().subscribe(list => this.invoice.set(list.find(item => item.status === 'Sent') || list[0] || null));
+
+      if (invoice.verificationMode === 'visibility-only') {
+        this.portalNotice.set('This receivable is tracked for visibility only and does not require debtor verification.');
+        this.step.set('invalid');
+        return;
+      }
+
+      this.invoice.set(invoice);
+
+      if (invoice.status === 'Accepted' || invoice.status === 'Rejected') {
+        this.decision.set(invoice.status);
+        this.step.set('confirm');
+        return;
+      }
+
+      if (this.isPortalExpired(invoice)) {
+        this.portalNotice.set('This verification link has expired. Please request a fresh invitation from the supplier.');
+        this.step.set('expired');
+      }
     });
   }
 
@@ -332,6 +377,10 @@ export class DebtorPortalComponent implements OnInit, OnDestroy {
       if (!result.valid) {
         this.error.set(result.message || 'Invalid or expired code. Please try again.');
         return;
+      }
+      const current = this.invoice();
+      if (current) {
+        this.invoice.set({ ...current, otpVerifiedAt: current.otpVerifiedAt || this.todayStamp() });
       }
       this.error.set('');
       this.step.set('review');
@@ -387,5 +436,17 @@ export class DebtorPortalComponent implements OnInit, OnDestroy {
         clearInterval(this.timer);
       }
     }, 1000);
+  }
+
+  private isPortalExpired(invoice: Invoice): boolean {
+    if (invoice.status === 'Accepted' || invoice.status === 'Rejected') return false;
+    const due = new Date(this.toIsoDate(invoice.dueDate)).getTime();
+    return Number.isFinite(due) && due < new Date().setHours(0, 0, 0, 0);
+  }
+
+  private toIsoDate(value: string): string {
+    if (value.includes('-')) return value;
+    const [month, day, year] = value.split('/');
+    return `${year}-${month}-${day}`;
   }
 }

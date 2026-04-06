@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { InvoiceDataService } from '../../core/services/invoice-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
@@ -287,7 +287,7 @@ interface InvoiceFormState {
   `],
 })
 export class InvoiceFormComponent implements OnInit {
-  private readonly svc = inject(MockDataService);
+  private readonly svc = inject(InvoiceDataService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

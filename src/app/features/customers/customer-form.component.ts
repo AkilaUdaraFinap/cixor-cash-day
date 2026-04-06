@@ -2,7 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MockDataService } from '../../core/services/mock-data.service';
+import { CustomerDataService } from '../../core/services/customer-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Customer, DebtorOfficer } from '../../shared/models/models';
 
@@ -129,7 +129,7 @@ import { Customer, DebtorOfficer } from '../../shared/models/models';
   `]
 })
 export class CustomerFormComponent implements OnInit {
-  private svc   = inject(MockDataService);
+  private svc   = inject(CustomerDataService);
   private toast = inject(ToastService);
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
