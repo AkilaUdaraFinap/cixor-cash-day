@@ -32,7 +32,23 @@ declare const Chart: any;
       <div class="card">
         <div class="text-muted text-sm font-medium mb-1">Available Cash Today</div>
         <div class="h1 font-bold text-brand lkr-mono" style="font-size:28px">{{ cashToday() | lkr }}</div>
-        <div class="text-sm text-muted mt-2">as of {{ today }}</div>
+        <div class="text-sm text-muted mt-2">
+          as of {{ today }}
+          <button class="btn btn-ghost btn-sm ml-2" style="font-size:10px;padding:2px 8px" (click)="showAccountBreakdown.set(!showAccountBreakdown())">
+            {{ showAccountBreakdown() ? '▲ Hide' : '▼ View' }} Accounts
+          </button>
+        </div>
+        <div *ngIf="showAccountBreakdown() && bankAccounts().length > 0" class="mt-3 pt-3" style="border-top:1px solid var(--border)">
+          <div class="text-xs font-medium text-muted mb-2">ACCOUNT BREAKDOWN</div>
+          <div *ngFor="let acc of activeBankAccounts()" class="flex justify-between text-sm mb-1">
+            <span class="text-muted">{{ acc.accountName }}</span>
+            <span class="lkr-mono">{{ acc.currentBalance | lkr }}</span>
+          </div>
+          <div class="flex justify-between text-sm font-medium mt-2 pt-2" style="border-top:1px dashed var(--border)">
+            <span>Total</span>
+            <span class="lkr-mono text-brand">{{ cashToday() | lkr }}</span>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="text-muted text-sm font-medium mb-1">Min. Monthly Operating Cost</div>
@@ -87,15 +103,16 @@ declare const Chart: any;
     <!-- Projection Chart -->
     <div class="card mb-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 style="font-size:16px">30-Day Cash Projection</h3>
+        <h3 style="font-size:16px">30-Day Cash Forecast</h3>
         <div class="text-sm text-muted">Simulation at {{ slider() }}% collection probability</div>
       </div>
       <div style="position:relative;height:280px">
         <canvas #chartCanvas></canvas>
       </div>
       <div class="flex gap-4 mt-3 text-sm text-muted" style="justify-content:center;flex-wrap:wrap">
-        <span><span style="display:inline-block;width:16px;height:3px;background:var(--brand);margin-right:4px;vertical-align:middle"></span>Projected Cash</span>
-        <span><span style="display:inline-block;width:16px;height:2px;background:var(--red);margin-right:4px;vertical-align:middle;border-top:2px dashed var(--red)"></span>Zero Line</span>
+        <span><span style="display:inline-block;width:16px;height:3px;background:var(--green);margin-right:4px;vertical-align:middle"></span>Income (Line)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--red);margin-right:4px;vertical-align:middle;border-radius:50%"></span>Expenses (Dot)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--amber);margin-right:4px;vertical-align:middle;border-radius:50%"></span>Payables (Dot)</span>
       </div>
     </div>
 
@@ -107,7 +124,7 @@ declare const Chart: any;
           <span class="badge badge-accepted ml-2" style="font-size:10px">{{ verifiedCount() }}</span>
         </button>
         <button class="tab-item" [class.active]="activeTab()===1" (click)="activeTab.set(1)">Liquidated</button>
-        <button class="tab-item" [class.active]="activeTab()===2" (click)="activeTab.set(2)">Fixed Expenses</button>
+        <button class="tab-item" [class.active]="activeTab()===2" (click)="activeTab.set(2)">Expenses</button>
       </div>
 
       <!-- Tab 0: Outstanding Invoices -->
@@ -116,7 +133,7 @@ declare const Chart: any;
           <!-- Verified section -->
           <ng-container *ngIf="verifiedInvoices().length > 0">
             <div class="section-header">
-              Verified Receivables
+              Verified Receivables (Dues)
               <span class="badge badge-verified">{{ verifiedInvoices().length }}</span>
             </div>
             <div class="desktop-table-only">
@@ -310,7 +327,7 @@ declare const Chart: any;
         </ng-template>
       </div>
 
-      <!-- Tab 2: Fixed Expenses -->
+      <!-- Tab 2: Expenses -->
       <div *ngIf="activeTab()===2" class="p-6">
         <!-- Recurring -->
         <div class="flex items-center justify-between mb-3">
@@ -497,15 +514,30 @@ declare const Chart: any;
               <div class="flex justify-between"><span class="text-muted">Gross Amount</span><span class="font-bold lkr-mono">{{ li.invoice.grossAmount | lkr }}</span></div>
             </div>
             <hr class="divider"/>
+            <!-- Liquidation Amount -->
+            <h4 class="mb-3" style="color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Liquidation Amount</h4>
+            <div class="form-group mb-4">
+              <label class="form-label">Amount to Liquidate (LKR) <span class="required">*</span></label>
+              <input class="form-control" type="number" [value]="liquidationAmount()" (input)="liquidationAmount.set(+($any($event.target).value))" [max]="li.invoice.grossAmount" min="1" placeholder="Enter amount"/>
+              <div class="text-muted text-sm mt-1">Maximum: {{ li.invoice.grossAmount | lkr }}</div>
+            </div>
             <!-- Fee Breakdown -->
             <h4 class="mb-3" style="color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Fee Breakdown</h4>
             <div class="grid-2 gap-2 mb-4 text-sm">
-              <div class="flex justify-between"><span class="text-muted">Discount / Fee</span><span class="text-red lkr-mono">{{ li.fee | lkr }} ({{ li.feePercent }}%)</span></div>
-              <div class="flex justify-between"><span class="text-muted">Net Cash Received Today</span><span class="font-bold text-green lkr-mono">{{ li.netCashToday | lkr }}</span></div>
+              <div class="flex justify-between"><span class="text-muted">Discount / Fee (2%)</span><span class="text-red lkr-mono">{{ (liquidationAmount() * 0.02) | lkr }}</span></div>
+              <div class="flex justify-between"><span class="text-muted">Net Cash Received Today</span><span class="font-bold text-green lkr-mono">{{ (liquidationAmount() - (liquidationAmount() * 0.02)) | lkr }}</span></div>
+            </div>
+            <hr class="divider"/>
+            <!-- Debtor Notification Message -->
+            <h4 class="mb-3" style="color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Debtor Notification</h4>
+            <div class="form-group mb-4">
+              <label class="form-label">Notification Message</label>
+              <textarea class="form-control" rows="4" [value]="liquidationMessage()" (input)="liquidationMessage.set($any($event.target).value)" placeholder="Message to send to debtor"></textarea>
+              <div class="text-muted text-sm mt-1">This message will be sent to the debtor along with the due date information.</div>
             </div>
             <hr class="divider"/>
             <!-- Before / After -->
-            <h4 class="mb-3" style="color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Cash Impact</h4>
+            <h4 class="mb-3" style="color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Cash Impact (at full liquidation)</h4>
             <table class="data-table mb-4" style="font-size:13px">
               <thead><tr><th></th><th class="text-right">Before</th><th class="text-right">After</th></tr></thead>
               <tbody>
@@ -528,7 +560,7 @@ declare const Chart: any;
             </table>
             <!-- Disclosure -->
             <div class="info-box info text-sm">
-              <strong>Settlement Disclosure:</strong> If you confirm, this invoice will be settled to CIXOR PayDay at the time of the liquidity event. The settlement path for this invoice will change from direct customer payment to CIXOR PayDay settlement.
+              <strong>Settlement Disclosure:</strong> If you confirm, this invoice will be settled to CIXOR PayDay at the time of the liquidity event. The settlement path for this invoice will change from direct customer payment to CIXOR PayDay settlement. The debtor will receive a notification with the due date and your custom message.
             </div>
           </div>
           <div class="modal-footer">
@@ -628,9 +660,23 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   liquidated  = this.store.selectSignal(Sel.selectLiquidated);
   recurring   = this.store.selectSignal(Sel.selectRecurring);
   oneoff      = this.store.selectSignal(Sel.selectOneOff);
+  bankAccounts = signal<any[]>([]);
+  showAccountBreakdown = signal(false);
   readonly listPageSize = 5;
 
-  verifiedInvoices   = computed(() => this.outstanding().filter(i => i.isVerified));
+  activeBankAccounts = computed(() => 
+    this.bankAccounts().filter((acc: any) => acc.isActive)
+  );
+
+  verifiedInvoices   = computed(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return this.outstanding().filter(i => {
+      if (!i.isVerified) return false;
+      const dueDate = new Date(i.dueDate);
+      return dueDate <= today;
+    });
+  });
   unverifiedInvoices = computed(() => this.outstanding().filter(i => !i.isVerified));
   verifiedCount      = computed(() => this.verifiedInvoices().length);
   monthlyTotal       = computed(() => this.recurring().filter(e => e.frequency === 'Monthly').reduce((s, e) => s + e.amount, 0));
@@ -643,6 +689,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   oneoffPage = signal(1);
   liquidityModal = signal(false);
   liquidityImpact = signal<LiquidityImpact | null>(null);
+  liquidationAmount = signal<number>(0);
+  liquidationMessage = signal<string>('');
   expenseFormOpen = signal(false);
   expenseFormType = signal<'recurring'|'oneoff'>('recurring');
   expenseToDelete = signal<{ type: 'recurring' | 'oneoff'; id: string; name: string } | null>(null);
@@ -689,6 +737,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.store.select(Sel.selectCurve).pipe(takeUntil(this.destroy$)).subscribe(curve => {
       if (this.chart && curve.length) this.updateChart(curve);
     });
+    
+    // Load bank accounts for breakdown display
+    this.svc.getBankAccounts().subscribe(accounts => {
+      this.bankAccounts.set(accounts);
+    });
   }
 
   ngAfterViewInit() {
@@ -734,31 +787,71 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const C = (window as any).Chart;
     if (!C) return;
     const labels = curve.map(p => p.date);
-    const data   = curve.map(p => p.balance);
+    
+    // Filter to only include points with actual values
+    const incomeData = curve.map((p, i) => p.income > 0 ? p.income : null);
+    const expensesData = curve.map((p, i) => p.expenses > 0 ? { x: i, y: p.expenses } : null).filter(p => p !== null);
+    const payablesData = curve.map((p, i) => p.payables > 0 ? { x: i, y: p.payables } : null).filter(p => p !== null);
+    
     const theme = this.getChartTheme();
     this.chart = new C(ctx, {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          label: 'Projected Cash Balance',
-          data,
-          borderColor: theme.line,
-          backgroundColor: theme.fill,
-          pointBackgroundColor: theme.line,
-          pointBorderColor: theme.line,
-          borderWidth: 2.2,
-          fill: true,
-          tension: 0.35,
-          pointRadius: 2.5,
-          pointHoverRadius: 5,
-        }]
+        datasets: [
+          {
+            label: 'Income',
+            data: incomeData,
+            type: 'line',
+            borderColor: theme.income,
+            backgroundColor: 'transparent',
+            pointBackgroundColor: theme.income,
+            pointBorderColor: theme.income,
+            borderWidth: 2.2,
+            fill: false,
+            tension: 0.35,
+            pointRadius: 2.5,
+            pointHoverRadius: 5,
+            spanGaps: true,
+          },
+          {
+            label: 'Expenses',
+            data: expensesData,
+            type: 'scatter',
+            borderColor: theme.expenses,
+            backgroundColor: theme.expenses,
+            pointBackgroundColor: theme.expenses,
+            pointBorderColor: theme.expenses,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          },
+          {
+            label: 'Payables',
+            data: payablesData,
+            type: 'scatter',
+            borderColor: theme.payables,
+            backgroundColor: theme.payables,
+            pointBackgroundColor: theme.payables,
+            pointBorderColor: theme.payables,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          }
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { intersect: false, mode: 'index' },
         plugins: {
-          legend: { display: false },
+          legend: { 
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: theme.tick,
+              usePointStyle: true,
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
           tooltip: {
             backgroundColor: theme.tooltipBg,
             borderColor: theme.tooltipBorder,
@@ -766,7 +859,22 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             titleColor: theme.tooltipText,
             bodyColor: theme.tooltipText,
             callbacks: {
-              label: (ctx: any) => ' LKR ' + Math.round(ctx.parsed.y).toLocaleString('en-LK')
+              title: (ctx: any) => {
+                return 'Date: ' + ctx[0].label;
+              },
+              label: (ctx: any) => {
+                const value = ctx.parsed.y;
+                if (value === 0) return null;
+                return ctx.dataset.label + ': LKR ' + Math.round(value).toLocaleString('en-LK');
+              },
+              footer: (ctx: any) => {
+                const point = curve[ctx[0].dataIndex];
+                const lines = [];
+                if (point.income > 0) lines.push('Income: LKR ' + point.income.toLocaleString('en-LK'));
+                if (point.expenses > 0) lines.push('Expenses: LKR ' + point.expenses.toLocaleString('en-LK'));
+                if (point.payables > 0) lines.push('Payables: LKR ' + point.payables.toLocaleString('en-LK'));
+                return lines.length > 0 ? '\n' + lines.join('\n') : '';
+              }
             }
           },
           annotation: {
@@ -802,7 +910,12 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private updateChart(curve: any[]) {
     if (!this.chart) { this.buildChart(curve); return; }
     this.chart.data.labels = curve.map(p => p.date);
-    this.chart.data.datasets[0].data = curve.map(p => p.balance);
+    
+    // Update with filtered data - only show dots when values > 0
+    this.chart.data.datasets[0].data = curve.map((p, i) => p.income > 0 ? p.income : null);
+    this.chart.data.datasets[1].data = curve.map((p, i) => p.expenses > 0 ? { x: i, y: p.expenses } : null).filter(p => p !== null);
+    this.chart.data.datasets[2].data = curve.map((p, i) => p.payables > 0 ? { x: i, y: p.payables } : null).filter(p => p !== null);
+    
     this.applyChartTheme();
     this.chart.update('active');
   }
@@ -810,12 +923,28 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private applyChartTheme(): void {
     if (!this.chart) return;
     const theme = this.getChartTheme();
-    const dataset = this.chart.data.datasets[0];
-    dataset.borderColor = theme.line;
-    dataset.backgroundColor = theme.fill;
-    dataset.pointBackgroundColor = theme.line;
-    dataset.pointBorderColor = theme.line;
+    
+    // Income dataset (line)
+    const incomeDataset = this.chart.data.datasets[0];
+    incomeDataset.borderColor = theme.income;
+    incomeDataset.pointBackgroundColor = theme.income;
+    incomeDataset.pointBorderColor = theme.income;
+    
+    // Expenses dataset (scatter)
+    const expensesDataset = this.chart.data.datasets[1];
+    expensesDataset.borderColor = theme.expenses;
+    expensesDataset.backgroundColor = theme.expenses;
+    expensesDataset.pointBackgroundColor = theme.expenses;
+    expensesDataset.pointBorderColor = theme.expenses;
+    
+    // Payables dataset (scatter)
+    const payablesDataset = this.chart.data.datasets[2];
+    payablesDataset.borderColor = theme.payables;
+    payablesDataset.backgroundColor = theme.payables;
+    payablesDataset.pointBackgroundColor = theme.payables;
+    payablesDataset.pointBorderColor = theme.payables;
 
+    this.chart.options.plugins.legend.labels.color = theme.tick;
     this.chart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
     this.chart.options.plugins.tooltip.borderColor = theme.tooltipBorder;
     this.chart.options.plugins.tooltip.titleColor = theme.tooltipText;
@@ -843,6 +972,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const surface = pick('--surface', '#FFFFFF');
 
     return {
+      income: pick('--green', '#10B981'),
+      expenses: pick('--red', '#EF4444'),
+      payables: pick('--amber', '#F59E0B'),
       line: accent,
       fill: `color-mix(in srgb, ${accent} 22%, transparent)`,
       grid: `color-mix(in srgb, ${border} 72%, transparent)`,
@@ -922,6 +1054,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   openLiquidityModal(inv: Invoice) {
     this.svc.getLiquidityImpact(inv.id).subscribe(impact => {
       this.liquidityImpact.set(impact);
+      this.liquidationAmount.set(inv.grossAmount); // Default to full amount
+      this.liquidationMessage.set(`Your payment for invoice ${inv.serialNumber} has been processed through CIXOR PayDay. Due date: ${inv.dueDate}. Please contact us if you have any questions.`);
       this.liquidityModal.set(true);
     });
   }
@@ -929,9 +1063,19 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmLiquidity() {
     const inv = this.liquidityImpact()?.invoice;
     if (!inv) return;
-    this.svc.confirmLiquidity(inv.id).subscribe(() => {
+    
+    const amount = this.liquidationAmount();
+    const message = this.liquidationMessage().trim();
+    
+    // Validate amount
+    if (amount <= 0 || amount > inv.grossAmount) {
+      this.toast.error(`Liquidation amount must be between 1 and ${inv.grossAmount.toLocaleString('en-LK')}`);
+      return;
+    }
+    
+    this.svc.confirmLiquidity(inv.id, amount, message).subscribe(() => {
       this.liquidityModal.set(false);
-      this.toast.success(`Liquidity intent confirmed for ${inv.serialNumber}.`);
+      this.toast.success(`Liquidity intent confirmed for ${inv.serialNumber}. Debtor will be notified.`);
       this.store.dispatch(A.loadDashboard());
     });
   }

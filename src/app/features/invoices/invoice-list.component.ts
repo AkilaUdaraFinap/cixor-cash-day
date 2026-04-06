@@ -21,6 +21,15 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
       <a routerLink="/invoices/new" class="btn btn-primary">Create Invoice</a>
     </div>
 
+    <div class="tabs mb-4">
+      <a routerLink="/invoices" routerLinkActive="tab-active" [routerLinkActiveOptions]="{exact: true}" class="tab">
+        Tax Invoices
+      </a>
+      <a routerLink="/invoices/proforma" routerLinkActive="tab-active" class="tab">
+        Proforma Invoices
+      </a>
+    </div>
+
     <div class="card mb-4">
       <div class="filter-bar">
         <input class="form-control invoice-search" placeholder="Search customer, invoice number, officer..." [(ngModel)]="searchTerm" (ngModelChange)="onFiltersChanged()"/>
@@ -147,14 +156,33 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 
     <ng-container *ngIf="pendingLiquidation() as invoice">
       <div class="overlay" (click.self)="closeLiquidationDialog()" (keydown.escape)="closeLiquidationDialog()" tabindex="-1">
-        <div class="modal" style="max-width:460px" role="dialog" aria-modal="true" aria-labelledby="invoice-liquidate-title">
+        <div class="modal" style="max-width:560px" role="dialog" aria-modal="true" aria-labelledby="invoice-liquidate-title">
           <div class="modal-header">
             <h3 id="invoice-liquidate-title">Confirm Liquidity</h3>
             <button class="btn btn-ghost btn-sm" type="button" (click)="closeLiquidationDialog()" aria-label="Close dialog">✕</button>
           </div>
           <div class="modal-body">
-            <div class="text-sm">Confirm liquidity for <strong>{{ invoice.serialNumber }}</strong>?</div>
-            <div class="text-muted text-sm mt-2">This settles the invoice through CIXOR PayDay and applies the liquidity fee.</div>
+            <div class="text-sm mb-4">
+              Liquidate invoice <strong>{{ invoice.serialNumber }}</strong> for <strong>{{ invoice.customerName }}</strong>
+            </div>
+            
+            <!-- Liquidation Amount -->
+            <div class="form-group mb-4">
+              <label class="form-label">Amount to Liquidate (LKR) <span class="required">*</span></label>
+              <input class="form-control" type="number" [value]="liquidationAmount()" (input)="liquidationAmount.set(+($any($event.target).value))" [max]="invoice.grossAmount" min="1" placeholder="Enter amount"/>
+              <div class="text-muted text-sm mt-1">Maximum: {{ invoice.grossAmount | lkr }} • Fee (2%): {{ (liquidationAmount() * 0.02) | lkr }} • Net: {{ (liquidationAmount() - (liquidationAmount() * 0.02)) | lkr }}</div>
+            </div>
+            
+            <!-- Notification Message -->
+            <div class="form-group mb-3">
+              <label class="form-label">Notification Message for Debtor</label>
+              <textarea class="form-control" rows="3" [value]="liquidationMessage()" (input)="liquidationMessage.set($any($event.target).value)" placeholder="Message to send to debtor"></textarea>
+              <div class="text-muted text-sm mt-1">Debtor will receive this message along with the due date.</div>
+            </div>
+            
+            <div class="info-box info text-sm mt-3">
+              This settles the invoice through CIXOR PayDay. The debtor will be notified automatically.
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="closeLiquidationDialog()">Cancel</button>
@@ -165,6 +193,28 @@ import { LkrPipe } from '../../shared/pipes/lkr.pipe';
     </ng-container>
   `,
   styles: [`
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    .tab {
+      padding: 12px 24px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      color: var(--brand);
+      background: var(--hover-bg);
+    }
+    .tab-active {
+      color: var(--brand);
+      border-bottom-color: var(--brand);
+    }
     .invoice-search { flex: 1; min-width: 220px; }
     .invoice-count { margin-left: auto; }
 
@@ -185,6 +235,8 @@ export class InvoiceListComponent implements OnInit {
   fromDate = '';
   toDate = '';
   pendingLiquidation = signal<Invoice | null>(null);
+  liquidationAmount = signal<number>(0);
+  liquidationMessage = signal<string>('');
   readonly pageSize = 8;
   page = signal(1);
 
@@ -258,6 +310,8 @@ export class InvoiceListComponent implements OnInit {
   }
 
   requestLiquidate(invoice: Invoice): void {
+    this.liquidationAmount.set(invoice.grossAmount); // Default to full amount
+    this.liquidationMessage.set(`Your payment for invoice ${invoice.serialNumber} has been processed through CIXOR PayDay. Due date: ${invoice.dueDate}. Please contact us if you have any questions.`);
     this.pendingLiquidation.set(invoice);
   }
 
@@ -268,8 +322,18 @@ export class InvoiceListComponent implements OnInit {
   confirmLiquidation(): void {
     const invoice = this.pendingLiquidation();
     if (!invoice) return;
-    this.svc.confirmLiquidity(invoice.id).subscribe(() => {
-      this.toast.success(`Liquidity confirmed for ${invoice.serialNumber}.`);
+    
+    const amount = this.liquidationAmount();
+    const message = this.liquidationMessage().trim();
+    
+    // Validate amount
+    if (amount <= 0 || amount > invoice.grossAmount) {
+      this.toast.error(`Liquidation amount must be between 1 and ${invoice.grossAmount.toLocaleString('en-LK')}`);
+      return;
+    }
+    
+    this.svc.confirmLiquidity(invoice.id, amount, message).subscribe(() => {
+      this.toast.success(`Liquidity confirmed for ${invoice.serialNumber}. Debtor will be notified.`);
       this.pendingLiquidation.set(null);
       this.load();
     });

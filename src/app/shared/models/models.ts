@@ -1,4 +1,5 @@
 export type InvoiceStatus = 'Draft' | 'Sent' | 'Viewed' | 'Accepted' | 'Rejected' | 'Settled';
+export type ProformaStatus = 'Draft' | 'Sent' | 'Viewed' | 'Converted' | 'Expired';
 
 export interface LineItem {
   id: string;
@@ -48,9 +49,39 @@ export interface Invoice {
   settledAt?: string;
   liquidatedAt?: string;
   liquidationFee?: number;
+  liquidationAmount?: number;
   netReceived?: number;
   settlementPath?: string;
   rejectionReason?: string;
+  liquidationNotificationMessage?: string;
+}
+
+export interface ProformaInvoice {
+  id: string;
+  serialNumber: string;
+  customerId: string;
+  customerName: string;
+  customerTin?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  supplierName?: string;
+  supplierAddress?: string;
+  supplierTin?: string;
+  issueDate: string;
+  validUntil: string;
+  paymentTermId?: string;
+  description?: string;
+  notes?: string;
+  lines: LineItem[];
+  netAmount: number;
+  vatAmount: number;
+  grossAmount: number;
+  status: ProformaStatus;
+  createdAt?: string;
+  sentAt?: string;
+  viewedAt?: string;
+  convertedAt?: string;
+  convertedToInvoiceId?: string;
 }
 
 export interface DebtorOfficer {
@@ -95,6 +126,9 @@ export interface OneOffExpense {
 export interface ProjectionPoint {
   date: string;
   balance: number;
+  expenses: number;
+  payables: number;
+  income: number;
 }
 
 export interface DashboardData {
@@ -141,11 +175,36 @@ export interface PaymentTerm {
   isDefault?: boolean;
 }
 
+export interface Tax {
+  id: string;
+  label: string;
+  rate: number;
+  isDefault?: boolean;
+}
+
+export interface BankAccount {
+  id: string;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  accountType: 'checking' | 'savings' | 'current' | 'other';
+  currentBalance: number;
+  currency: string;
+  isActive: boolean;
+  isPrimary: boolean;
+  lastUpdated: string;
+  notes?: string;
+}
+
 export interface BankBalanceEntry {
+  id: string;
+  accountId: string;
   date: string;
   bank: string;
   account: string;
   balance: number;
+  enteredBy?: string;
+  notes?: string;
 }
 
 export interface CompanyConfig {
@@ -161,9 +220,13 @@ export interface CompanyConfig {
   taxRegimeLabel?: string;
   country?: string;
   vatRate: number;
+  defaultTaxId?: string;
   branchCode: string;
   invoiceCounter: number;
   currentBalance: number;
+  primaryBankAccountId?: string;
+  timezone?: string;
+  dateFormat?: string;
 }
 
 export interface PortalInvoiceSummary {

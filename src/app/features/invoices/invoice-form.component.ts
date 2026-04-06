@@ -6,7 +6,7 @@ import { MockDataService } from '../../core/services/mock-data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { LkrPipe } from '../../shared/pipes/lkr.pipe';
 import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
-import { CompanyConfig, Customer, Invoice, LineItem, PaymentTerm } from '../../shared/models/models';
+import { CompanyConfig, Customer, Invoice, LineItem, PaymentTerm, Tax } from '../../shared/models/models';
 
 interface InvoiceFormLine extends LineItem {
   reference: string;
@@ -18,6 +18,8 @@ interface InvoiceFormState {
   customerId: string;
   customerName: string;
   paymentTermId: string;
+  selectedTaxIds: string[];
+  branchCode: string;
   invoiceDateRaw: string;
   deliveryDateRaw: string;
   dueDateRaw: string;
@@ -107,6 +109,23 @@ interface InvoiceFormState {
               </div>
               <div class="char-count">{{ form.serialNumber.length }}/40</div>
             </div>
+            <div class="form-group mb-0 col-span-2">
+              <label class="form-label">Tax Rates <span class="required">*</span></label>
+              <div class="tax-selection">
+                <div *ngFor="let tax of taxes()" class="tax-checkbox">
+                  <label>
+                    <input type="checkbox" [checked]="isTaxSelected(tax.id)" (change)="toggleTax(tax.id)"/>
+                    <span>{{ tax.label }} ({{ tax.rate }}%)</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-hint">Select one or more tax rates to apply to this invoice</div>
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Invoice Branch / Unit Code <span class="required">*</span></label>
+              <input class="form-control" [(ngModel)]="form.branchCode" maxlength="4" placeholder="HQ01" style="text-transform:uppercase"/>
+              <div class="form-hint">Used in serial number (e.g., HQ01, BR03)</div>
+            </div>
             <div class="form-group mb-0">
               <label class="form-label">Date of Invoice <span class="required">*</span></label>
               <input class="form-control" type="date" [(ngModel)]="form.invoiceDateRaw" (change)="computeDue(true)"/>
@@ -161,7 +180,7 @@ interface InvoiceFormState {
                   <th>Description of Goods or Services</th>
                   <th>Quantity</th>
                   <th>Unit Price (LKR)</th>
-                  <th class="text-right">Amount Excl. VAT (LKR)</th>
+                  <th class="text-right">Amount (LKR)</th>
                   <th></th>
                 </tr>
               </thead>
@@ -187,15 +206,15 @@ interface InvoiceFormState {
           <h3 class="section-title">Totals</h3>
           <div class="totals-box">
             <div class="totals-row">
-              <span>Total Value of Supply</span>
+              <span>Total Value of Supply (Excl. Tax)</span>
               <strong class="lkr-mono">{{ form.netAmount | lkr }}</strong>
             </div>
-            <div class="totals-row">
-              <span>VAT Amount ({{ cfg.vatRate }}%)</span>
-              <strong class="lkr-mono">{{ form.vatAmount | lkr }}</strong>
+            <div class="totals-row" *ngFor="let taxBreakdown of taxBreakdowns()">
+              <span>{{ taxBreakdown.label }} ({{ taxBreakdown.rate }}%)</span>
+              <strong class="lkr-mono">{{ taxBreakdown.amount | lkr }}</strong>
             </div>
             <div class="totals-row totals-row-grand">
-              <span>Total Amount including VAT</span>
+              <span>Total Amount including Tax</span>
               <strong class="lkr-mono">{{ form.grossAmount | lkr }}</strong>
             </div>
           </div>
@@ -224,11 +243,13 @@ interface InvoiceFormState {
             <div [class]="form.serialNumber ? 'check-ok' : 'check-fail'">{{ form.serialNumber ? '✓' : '•' }} Serial number generated</div>
             <div [class]="selectedCustomer() ? 'check-ok' : 'check-fail'">{{ selectedCustomer() ? '✓' : '•' }} Purchaser selected</div>
             <div [class]="form.debtorOfficerId ? 'check-ok' : 'check-fail'">{{ form.debtorOfficerId ? '✓' : '•' }} Debtor officer assigned</div>
+            <div [class]="form.selectedTaxIds.length ? 'check-ok' : 'check-fail'">{{ form.selectedTaxIds.length ? '✓' : '•' }} Tax rate(s) selected</div>
+            <div [class]="form.branchCode ? 'check-ok' : 'check-fail'">{{ form.branchCode ? '✓' : '•' }} Branch code entered</div>
             <div [class]="form.placeOfSupply ? 'check-ok' : 'check-fail'">{{ form.placeOfSupply ? '✓' : '•' }} Place of supply entered</div>
             <div [class]="form.deliveryDateRaw ? 'check-ok' : 'check-fail'">{{ form.deliveryDateRaw ? '✓' : '•' }} Delivery date entered</div>
             <div [class]="form.lines.length ? 'check-ok' : 'check-fail'">{{ form.lines.length ? '✓' : '•' }} At least one line item</div>
             <div [class]="serialValid() ? 'check-ok' : 'check-fail'">{{ serialValid() ? '✓' : '•' }} Serial format valid</div>
-            <div [class]="taxValid() ? 'check-ok' : 'check-fail'">{{ taxValid() ? '✓' : '•' }} Net + VAT = Gross</div>
+            <div [class]="taxValid() ? 'check-ok' : 'check-fail'">{{ taxValid() ? '✓' : '•' }} Net + Tax = Gross</div>
           </div>
           <div class="form-error mt-3" *ngFor="let issue of validationIssues()">{{ issue }}</div>
         </div>
@@ -243,6 +264,10 @@ interface InvoiceFormState {
     .section-title { font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
     .col-span-2 { grid-column:1 / -1; }
     .serial-row { display:flex; gap:8px; align-items:center; }
+    .tax-selection { display:flex; flex-direction:column; gap:8px; }
+    .tax-checkbox { display:flex; align-items:center; }
+    .tax-checkbox label { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; margin:0; }
+    .tax-checkbox input[type="checkbox"] { cursor:pointer; width:16px; height:16px; }
     .totals-box { margin-left:auto; max-width:420px; }
     .totals-row { display:flex; justify-content:space-between; gap:16px; padding:10px 0; border-bottom:1px solid var(--border); }
     .totals-row-grand { border-bottom:none; font-size:16px; color:var(--brand); }
@@ -271,9 +296,22 @@ export class InvoiceFormComponent implements OnInit {
   config = signal<CompanyConfig | null>(null);
   customers = signal<Customer[]>([]);
   paymentTerms = signal<PaymentTerm[]>([]);
+  taxes = signal<Tax[]>([]);
 
   selectedCustomer = computed(() => this.customers().find(customer => customer.id === this.form.customerId) ?? null);
   availableOfficers = computed(() => this.selectedCustomer()?.officers ?? []);
+  taxBreakdowns = computed(() => {
+    return this.form.selectedTaxIds.map(taxId => {
+      const tax = this.taxes().find(t => t.id === taxId);
+      if (!tax) return null;
+      return {
+        id: tax.id,
+        label: tax.label,
+        rate: tax.rate,
+        amount: Math.round(this.form.netAmount * tax.rate / 100)
+      };
+    }).filter(item => item !== null);
+  });
   validationIssues = computed(() => this.collectValidationIssues());
 
   form: InvoiceFormState = this.createEmptyForm();
@@ -286,6 +324,7 @@ export class InvoiceFormComponent implements OnInit {
       this.config.set(config);
       if (!id) {
         this.svc.nextSerialNumber().subscribe(serial => { this.form.serialNumber = serial; });
+        this.form.branchCode = config.branchCode || 'HQ01';
       }
     });
 
@@ -295,6 +334,16 @@ export class InvoiceFormComponent implements OnInit {
       if (!id) {
         this.form.paymentTermId = terms.find(term => term.isDefault)?.id || terms[0]?.id || '';
         this.computeDue(true);
+      }
+    });
+    this.svc.getTaxes().subscribe(taxes => {
+      this.taxes.set(taxes);
+      if (!id) {
+        const defaultTax = taxes.find(t => t.isDefault);
+        if (defaultTax) {
+          this.form.selectedTaxIds = [defaultTax.id];
+        }
+        this.computeTotals();
       }
     });
 
@@ -307,6 +356,8 @@ export class InvoiceFormComponent implements OnInit {
           customerId: invoice.customerId,
           customerName: invoice.customerName,
           paymentTermId: invoice.paymentTermId || '',
+          selectedTaxIds: this.taxes().find(tax => tax.isDefault) ? [this.taxes().find(tax => tax.isDefault)!.id] : [],
+          branchCode: this.config()?.branchCode || 'HQ01',
           invoiceDateRaw: this.toInputDate(invoice.invoiceDate),
           deliveryDateRaw: this.toInputDate(invoice.deliveryDate || invoice.invoiceDate),
           dueDateRaw: this.toInputDate(invoice.dueDate),
@@ -315,7 +366,10 @@ export class InvoiceFormComponent implements OnInit {
           modeOfPayment: invoice.modeOfPayment,
           description: invoice.description || '',
           additionalInformation: invoice.additionalInformation || '',
-          lines: invoice.lines.map(line => ({ ...line, reference: line.reference || '' })),
+          lines: invoice.lines.map(line => ({ 
+            ...line, 
+            reference: line.reference || ''
+          })),
           netAmount: invoice.netAmount,
           vatAmount: invoice.vatAmount,
           grossAmount: invoice.grossAmount,
@@ -337,6 +391,19 @@ export class InvoiceFormComponent implements OnInit {
     this.toast.info('Invoice serial number copied.');
   }
 
+  isTaxSelected(taxId: string): boolean {
+    return this.form.selectedTaxIds.includes(taxId);
+  }
+
+  toggleTax(taxId: string): void {
+    if (this.isTaxSelected(taxId)) {
+      this.form.selectedTaxIds = this.form.selectedTaxIds.filter(id => id !== taxId);
+    } else {
+      this.form.selectedTaxIds = [...this.form.selectedTaxIds, taxId];
+    }
+    this.computeTotals();
+  }
+
   addLine(): void {
     this.form.lines = [...this.form.lines, this.createLine()];
   }
@@ -351,10 +418,14 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   computeTotals(): void {
-    const vatRate = this.config()?.vatRate ?? 18;
     const netAmount = this.form.lines.reduce((sum, line) => sum + this.lineTotal(line), 0);
+    const taxAmount = this.form.selectedTaxIds.reduce((sum, taxId) => {
+      const tax = this.taxes().find(t => t.id === taxId);
+      if (!tax) return sum;
+      return sum + Math.round(netAmount * tax.rate / 100);
+    }, 0);
     this.form.netAmount = Math.round(netAmount);
-    this.form.vatAmount = Math.round(this.form.netAmount * vatRate / 100);
+    this.form.vatAmount = Math.round(taxAmount);
     this.form.grossAmount = this.form.netAmount + this.form.vatAmount;
   }
 
@@ -407,6 +478,9 @@ export class InvoiceFormComponent implements OnInit {
     const issues: string[] = [];
     if (!this.form.customerId) issues.push('Select the purchaser.');
     if (!this.form.debtorOfficerId) issues.push('Assign a debtor officer for OTP acceptance.');
+    if (!this.form.selectedTaxIds.length) issues.push('Select at least one tax rate.');
+    if (!this.form.branchCode.trim()) issues.push('Enter the invoice branch/unit code.');
+    if (this.form.branchCode && !/^[A-Z0-9]{1,4}$/.test(this.form.branchCode.trim().toUpperCase())) issues.push('Branch code must be 1-4 uppercase letters or numbers.');
     if (!this.form.invoiceDateRaw) issues.push('Provide the invoice date.');
     if (!this.form.deliveryDateRaw) issues.push('Provide the delivery date.');
     if (!this.form.dueDateRaw) issues.push('Provide the due date.');
@@ -460,7 +534,14 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   private createLine(): InvoiceFormLine {
-    return { id: Date.now().toString() + Math.random().toString(16).slice(2), reference: '', description: '', qty: 1, unitPrice: 0, discount: 0 };
+    return { 
+      id: Date.now().toString() + Math.random().toString(16).slice(2), 
+      reference: '', 
+      description: '', 
+      qty: 1, 
+      unitPrice: 0, 
+      discount: 0
+    };
   }
 
   private createEmptyForm(): InvoiceFormState {
@@ -470,6 +551,8 @@ export class InvoiceFormComponent implements OnInit {
       customerId: '',
       customerName: '',
       paymentTermId: '',
+      selectedTaxIds: [],
+      branchCode: '',
       invoiceDateRaw: '',
       deliveryDateRaw: '',
       dueDateRaw: '',

@@ -128,13 +128,28 @@ import { NumberToWordsPipe } from '../../shared/pipes/number-to-words.pipe';
 
     <ng-container *ngIf="pendingAction() as action">
       <div class="overlay" (click.self)="closeActionDialog()" (keydown.escape)="closeActionDialog()" tabindex="-1">
-        <div class="modal" style="max-width:500px" role="dialog" aria-modal="true" aria-labelledby="invoice-action-title">
+        <div class="modal" [style.max-width]="action === 'liquidate' ? '600px' : '500px'" role="dialog" aria-modal="true" aria-labelledby="invoice-action-title">
           <div class="modal-header">
             <h3 id="invoice-action-title">{{ actionTitle(action) }}</h3>
             <button class="btn btn-ghost btn-sm" type="button" (click)="closeActionDialog()" aria-label="Close dialog">✕</button>
           </div>
           <div class="modal-body">
-            <div class="text-sm">{{ actionMessage(action) }}</div>
+            <div class="text-sm mb-4">{{ actionMessage(action) }}</div>
+            
+            <!-- Liquidation-specific fields -->
+            <ng-container *ngIf="action === 'liquidate' && invoice() as inv">
+              <div class="form-group mb-4">
+                <label class="form-label">Amount to Liquidate (LKR) <span class="required">*</span></label>
+                <input class="form-control" type="number" [value]="liquidationAmount()" (input)="liquidationAmount.set(+($any($event.target).value))" [max]="inv.grossAmount" min="1" placeholder="Enter amount"/>
+                <div class="text-muted text-sm mt-1">Maximum: {{ inv.grossAmount | lkr }} • Fee (2%): {{ (liquidationAmount() * 0.02) | lkr }} • Net: {{ (liquidationAmount() - (liquidationAmount() * 0.02)) | lkr }}</div>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label class="form-label">Notification Message for Debtor</label>
+                <textarea class="form-control" rows="3" [value]="liquidationMessage()" (input)="liquidationMessage.set($any($event.target).value)" placeholder="Message to send to debtor"></textarea>
+                <div class="text-muted text-sm mt-1">Debtor will receive this message along with the due date.</div>
+              </div>
+            </ng-container>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" (click)="closeActionDialog()">Cancel</button>
@@ -211,6 +226,8 @@ export class InvoiceDetailComponent implements OnInit {
 
   invoice = signal<Invoice | null>(null);
   pendingAction = signal<'send' | 'liquidate' | 'settle' | null>(null);
+  liquidationAmount = signal<number>(0);
+  liquidationMessage = signal<string>('');
   invoiceCompanyPhone = computed(() => this.invoice()?.supplierName ? '+94 11 234 5678' : '—');
   timeline = computed(() => {
     const invoice = this.invoice();
@@ -242,6 +259,11 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   requestAction(action: 'send' | 'liquidate' | 'settle'): void {
+    const invoice = this.invoice();
+    if (action === 'liquidate' && invoice) {
+      this.liquidationAmount.set(invoice.grossAmount); // Default to full amount
+      this.liquidationMessage.set(`Your payment for invoice ${invoice.serialNumber} has been processed through CIXOR PayDay. Due date: ${invoice.dueDate}. Please contact us if you have any questions.`);
+    }
     this.pendingAction.set(action);
   }
 
@@ -294,9 +316,20 @@ export class InvoiceDetailComponent implements OnInit {
   private confirmLiquidity(): void {
     const invoice = this.invoice();
     if (!invoice) return;
-    this.svc.confirmLiquidity(invoice.id).subscribe(updated => {
+    
+    const amount = this.liquidationAmount();
+    const message = this.liquidationMessage().trim();
+    
+    // Validate amount
+    if (amount <= 0 || amount > invoice.grossAmount) {
+      this.toast.error(`Liquidation amount must be between 1 and ${invoice.grossAmount.toLocaleString('en-LK')}`);
+      return;
+    }
+    
+    this.svc.confirmLiquidity(invoice.id, amount, message).subscribe(updated => {
       this.invoice.set(updated);
-      this.toast.success(`Liquidity confirmed for ${updated.serialNumber}.`);
+      this.pendingAction.set(null);
+      this.toast.success(`Liquidity confirmed for ${updated.serialNumber}. Debtor will be notified.`);
     });
   }
 
